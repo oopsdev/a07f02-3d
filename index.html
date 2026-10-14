@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <style>body{margin:0}[hidden]{display:none!important}img{max-width:100%}</style>
+<!-- 分頁圖示：青藍底白色房子（內嵌 SVG，不需外部檔案） -->
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230e7490'/%3E%3Cpath d='M12 33 L32 15 L52 33' fill='none' stroke='white' stroke-width='5.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M18 30 V49 H46 V30' fill='none' stroke='white' stroke-width='5.5' stroke-linejoin='round'/%3E%3Crect x='28' y='36' width='8' height='13' rx='1' fill='white'/%3E%3Crect x='40' y='17' width='5' height='9' fill='white'/%3E%3C/svg%3E">
 </head>
 <body>
 <title>A07F02 3D 模型</title>
@@ -47,6 +49,7 @@ body { background: var(--bg); color: var(--ink); font-family: var(--font-body); 
 .lbl-toggle { position: absolute; top: 14px; left: 16px; z-index: 2; font: inherit; font-size: 13px; font-weight: 500; padding: 7px 14px; border-radius: 6px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,.12); }
 .lbl-toggle:hover { border-color: var(--accent); }
 .lbl-toggle[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.walk-btn { left: auto; right: 16px; }
 .hint { position: absolute; left: 16px; bottom: 14px; font-size: 12px; color: var(--muted); background: color-mix(in srgb, var(--panel) 85%, transparent); padding: 4px 10px; border-radius: 4px; pointer-events: none; }
 .lbl { font-family: var(--font-body); font-size: 12px; font-weight: 500; color: #1b2321; background: rgba(255,255,255,.86); padding: 2px 7px; border-radius: 3px; white-space: nowrap; pointer-events: none; box-shadow: 0 1px 2px rgba(0,0,0,.12); text-align: center; line-height: 1.3; }
 .lbl small { display: block; font-family: var(--font-data); font-size: 10px; font-weight: 400; color: #5d6966; }
@@ -76,6 +79,29 @@ body { background: var(--bg); color: var(--ink); font-family: var(--font-body); 
 .seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
 button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .row { display: flex; align-items: center; gap: 10px; }
+.sum { display: flex; flex-direction: column; border-top: 1px solid var(--line); }
+.sum-item { display: block; padding: 10px 2px; border-bottom: 1px solid var(--line); }
+.sum-item[open] > .sum-h { margin-bottom: 6px; }
+.sum-h { display: flex; align-items: baseline; gap: 10px; cursor: pointer; list-style: none; }
+.sum-h::-webkit-details-marker { display: none; }
+.sum-h::after { content: '▸'; margin-left: auto; color: var(--muted); font-size: 12px; transition: transform .15s; }
+.sum-item[open] > .sum-h::after { transform: rotate(90deg); }
+.sum-h:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { .sum-h::after { transition: none; } }
+.sum-h span { flex: none; min-width: 3.5em; font-size: 12px; font-weight: 700; letter-spacing: .08em; color: var(--accent); }
+.sum-h b { font-weight: 500; font-size: 13px; }
+.sum-item .notes, .sum-item .lnote { padding-left: calc(3.5em + 10px); }
+.sum-item .notes { padding-left: calc(3.5em + 28px); }
+.grps { display: flex; flex-direction: column; gap: 10px; }
+.grp { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 8px; }
+.grp h3 { margin: 0; font-size: 13px; font-weight: 700; }
+.grp .sub { display: flex; flex-direction: column; gap: 8px; padding-left: 10px; border-left: 2px solid var(--accent-soft); }
+.field { display: grid; grid-template-columns: 5.2em minmax(0, 1fr); align-items: center; gap: 8px; }
+.field label { font-size: 13px; color: var(--muted); }
+.field select { font: inherit; font-size: 13px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--ink); min-width: 0; width: 100%; }
+.reset-btn { align-self: flex-start; font: inherit; font-size: 12px; padding: 5px 12px; border: 1px solid var(--line); border-radius: 6px; background: transparent; color: var(--muted); cursor: pointer; }
+.reset-btn:hover { border-color: var(--accent); color: var(--ink); }
+.field select:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .row label { flex: 1; }
 .row output { font-family: var(--font-data); font-size: 12px; color: var(--muted); min-width: 52px; text-align: right; font-variant-numeric: tabular-nums; }
 input[type="range"] { width: 100%; accent-color: var(--accent); }
@@ -110,6 +136,7 @@ input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px;
   <div class="board">
     <div id="gl" aria-label="A07F02 戶型 3D 模型，可拖曳旋轉"></div>
     <button type="button" class="lbl-toggle" id="labels" aria-pressed="false">顯示文字</button>
+    <button type="button" class="lbl-toggle walk-btn" id="walk" aria-pressed="false">進入室內</button>
     <div class="hint" id="hint">拖曳旋轉 · 滾輪縮放 · 右鍵拖曳平移 · 點地板選空間</div>
   </div>
 
@@ -118,79 +145,185 @@ input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px;
       <div class="co">遠雄建設 · BH8 遠雄洄山行</div>
       <div><h1>2F 平面 3D 模型</h1></div>
       <div class="unit"><span>戶別</span><b>A07F02</b></div>
-      <div class="sub"><span>原圖 S:1/60</span><span>牆高 300 cm</span><span>單位 cm</span></div>
+      <div class="sub"><span>原圖 S:1/60</span><span id="hdr-height">淨高 — cm</span><span>單位 cm</span></div>
     </div>
 
-    <section class="sec">
-      <h2>視角</h2>
-      <div class="seg" role="group" aria-label="視角">
-        <button id="v-iso" aria-pressed="true">鳥瞰</button>
-        <button id="v-top" aria-pressed="false">平面俯視</button>
-        <button id="v-eye" aria-pressed="false">餐廳看客廳</button>
+    <section class="sec summary">
+      <h2>目前配置</h2>
+      <div class="sum">
+        <details class="sum-item">
+          <summary class="sum-h"><span>玄關</span><b id="sum-entry"></b></summary>
+          <ul class="notes" id="entry-note"></ul>
+        </details>
+        <details class="sum-item">
+          <summary class="sum-h"><span>客廳</span><b id="sum-living"></b></summary>
+          <ul class="notes" id="tv-note"></ul>
+        </details>
+        <details class="sum-item">
+          <summary class="sum-h"><span>廚房</span><b id="sum-kitchen"></b></summary>
+          <p class="lnote" id="kitchen-note">廚房北牆與東牆維持原圖，廚房以開口連通餐廳。</p>
+        </details>
+        <details class="sum-item">
+          <summary class="sum-h"><span>餐廳</span><b id="sum-dining"></b></summary>
+          <p class="lnote" id="dining-note"></p>
+        </details>
+        <details class="sum-item">
+          <summary class="sum-h"><span>主臥</span><b id="sum-master"></b></summary>
+          <p class="lnote" id="layout-note"></p>
+        </details>
+        <details class="sum-item">
+          <summary class="sum-h"><span>臥室一</span><b id="sum-bed1"></b></summary>
+          <p class="lnote" id="part-note">北牆與西牆皆為實牆，客廳電視可壁掛在北牆上。</p>
+        </details>
       </div>
     </section>
 
     <section class="sec">
-      <h2>主臥擺法</h2>
-      <div class="seg two" role="group" aria-label="主臥擺法">
-        <button id="l-q5" aria-pressed="true">150 置中（亮藍）</button>
-        <button id="l-k6" aria-pressed="false">180 偏左（深灰）</button>
-      </div>
-      <p class="lnote" id="layout-note"></p>
-    </section>
-
-    <section class="sec">
-      <h2>廚房隔間</h2>
-      <div class="seg two" role="group" aria-label="廚房隔間">
-        <button id="k-orig" aria-pressed="true">原始隔間</button>
-        <button id="k-open" aria-pressed="false">打開（留冰箱牆）</button>
-      </div>
-      <p class="lnote" id="kitchen-note">廚房北牆與東牆維持原圖，廚房以開口連通餐廳。</p>
-    </section>
-
-    <section class="sec">
-      <h2>餐桌（NORDEN 摺疊桌）</h2>
-      <div class="seg two" role="group" aria-label="餐桌模式">
-        <button id="d-daily" aria-pressed="true">平日 2 人</button>
-        <button id="d-guest" aria-pressed="false">宴客 6 人</button>
-      </div>
-      <p class="lnote" id="dining-note"></p>
-    </section>
-
-    <section class="sec">
-      <h2>臥室一北牆＋西牆隔間</h2>
-      <div class="seg two" role="group" aria-label="臥室一北牆與西牆隔間">
-        <button id="p-solid" aria-pressed="true">實牆</button>
-        <button id="p-glass" aria-pressed="false">腰牆＋上方玻璃</button>
-      </div>
-      <div id="waist-ctl" hidden>
-        <div class="row">
-          <label for="waist">腰牆高度</label>
-          <output id="waist-out" for="waist">90 cm</output>
+      <h2>區域設定</h2>
+      <div class="grps">
+        <div class="grp">
+          <h3>玄關</h3>
+          <div class="field">
+            <label for="sel-entry">玄關櫃顯示</label>
+            <select id="sel-entry">
+              <option value="outside">外觀（關門）</option>
+              <option value="inside">內裝（後段）</option>
+            </select>
+          </div>
+          <p class="lnote">也可以直接點一下玄關櫃後段切換。</p>
         </div>
-        <input type="range" id="waist" min="40" max="300" step="5" value="90">
-      </div>
-      <div id="frame-ctl" hidden>
-        <div class="seg" role="group" aria-label="玻璃框型">
-          <button id="f-none" aria-pressed="true">無框</button>
-          <button id="f-black" aria-pressed="false">黑細框</button>
-          <button id="f-white" aria-pressed="false">白框</button>
-        </div>
-        <div class="seg two" role="group" aria-label="腰牆上方玻璃種類" style="margin-top:8px">
-          <button id="g-clear" aria-pressed="true">透明玻璃</button>
-          <button id="g-reeded" aria-pressed="false">長虹玻璃</button>
-        </div>
-      </div>
-      <p class="lnote" id="part-note">北牆與西牆皆為實牆，客廳電視可壁掛在北牆上。</p>
-    </section>
 
-    <section class="sec">
-      <h2>客廳電視 55 吋</h2>
-      <div class="seg two" role="group" aria-label="電視與沙發位置">
-        <button id="lv-normal" aria-pressed="true">電視在臥室一牆</button>
-        <button id="lv-swap" aria-pressed="false">電視與沙發互換</button>
+        <div class="grp">
+          <h3>客廳</h3>
+          <div class="field">
+            <label for="sel-living">電視與沙發</label>
+            <select id="sel-living">
+              <option value="swap">電視靠結構牆（客廳北側外牆）</option>
+              <option value="normal">電視靠隔間牆（臥室一牆）</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grp">
+          <h3>廚房</h3>
+          <div class="field">
+            <label for="sel-kitchen">隔間</label>
+            <select id="sel-kitchen">
+              <option value="open">打通（留冰箱與電器櫃牆）</option>
+              <option value="orig">原始隔間</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grp">
+          <h3>餐廳</h3>
+          <div class="field">
+            <label for="sel-dining">餐桌</label>
+            <select id="sel-dining">
+              <option value="daily">平日 2 人（桌長 89 cm）</option>
+              <option value="guest">宴客 6 人（桌長 152 cm）</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="sel-dloc">餐桌位置</label>
+            <select id="sel-dloc">
+              <option value="area">餐廳（靠北牆）</option>
+              <option value="fridge">冰箱旁（需廚房打通）</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grp">
+          <h3>主臥</h3>
+          <div class="field">
+            <label for="sel-layout">床與衣櫃</label>
+            <select id="sel-layout">
+              <option value="k6">SLATTUM 180 偏左（深灰）</option>
+              <option value="q5">SLATTUM 150 置中（亮藍）</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grp">
+          <h3>臥室一</h3>
+          <div class="field">
+            <label for="sel-part">北牆＋西牆</label>
+            <select id="sel-part">
+              <option value="glass">腰牆＋上方玻璃</option>
+              <option value="solid">實牆</option>
+            </select>
+          </div>
+          <div id="frame-ctl" class="sub" hidden>
+            <div class="field">
+              <label for="sel-frame">玻璃框型</label>
+              <select id="sel-frame">
+                <option value="none">無框</option>
+                <option value="black">黑細框</option>
+                <option value="white">白框</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="sel-glass">玻璃種類</label>
+              <select id="sel-glass">
+                <option value="clear">透明玻璃</option>
+                <option value="reeded">長虹玻璃</option>
+              </select>
+            </div>
+          </div>
+          <div id="waist-ctl" class="sub" hidden>
+            <div class="row">
+              <label for="waist">腰牆高度</label>
+              <output id="waist-out" for="waist">90 cm</output>
+            </div>
+            <input type="range" id="waist" min="40" step="5" value="90">
+          </div>
+        </div>
+
+        <div class="grp">
+          <h3>全屋顯示</h3>
+          <div class="field">
+            <label for="sel-view">視角</label>
+            <select id="sel-view">
+              <option value="iso">鳥瞰</option>
+              <option value="top">平面俯視</option>
+              <option value="eye">餐廳看客廳</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="sel-wall">牆面顏色</label>
+            <select id="sel-wall"></select>
+          </div>
+          <div class="field">
+            <label for="sel-beam">樑</label>
+            <select id="sel-beam">
+              <option value="show">顯示</option>
+              <option value="ghost">半透明</option>
+              <option value="off">隱藏</option>
+            </select>
+          </div>
+          <div class="row">
+            <label for="cut">剖切高度</label>
+            <output id="cut-out" for="cut"></output>
+          </div>
+          <input type="range" id="cut" min="30" step="5">
+          <div class="row">
+            <label for="sun-az">陽光方位</label>
+            <output id="sun-az-out" for="sun-az">217°</output>
+          </div>
+          <input type="range" id="sun-az" min="0" max="359" step="1" value="217">
+          <div class="row">
+            <label for="sun-el">太陽高度</label>
+            <output id="sun-el-out" for="sun-el">55°</output>
+          </div>
+          <input type="range" id="sun-el" min="10" max="80" step="1" value="55">
+          <p class="lnote" id="sun-note">陽光方位以平面圖上方為北（0° 北、90° 東、180° 南、270° 西），不是實際座向。</p>
+          <div class="checks">
+            <label><input type="checkbox" id="spin"> 自動旋轉</label>
+          </div>
+          <p class="lnote">所有設定會自動記在這個瀏覽器裡，重新載入時沿用。</p>
+          <button type="button" class="reset-btn" id="reset-settings">恢復預設設定</button>
+        </div>
       </div>
-      <ul class="notes" id="tv-note"></ul>
     </section>
 
     <section class="sec">
@@ -205,35 +338,9 @@ input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px;
         <li><a href="https://www.ikea.com.tw/zh/products/dining-seating/upholstered-chairs/ikea-ps-2026-art-30617968" target="_blank" rel="noopener">IKEA PS 2026 餐椅</a> × 2（宴客另備 4 張），亮綠色 Knäbäck 布套（可拆洗），44 × 55 × 76（座高 47），每張 NT$2,499</li>
         <li><a href="https://www.ikea.com.tw/zh/products/sofas/sofas/stockholm-art-30245044" target="_blank" rel="noopener">STOCKHOLM 三人座沙發</a>，Seglora 天然全粒面牛皮/鋁腳，211 × 88 × 80（座高 43、扶手高 72），NT$69,990</li>
         <li><a href="https://www.ikea.com.tw/en/products/sofa-tables/sofa-tables-and-side-tables/stockholm-2025-art-30586556" target="_blank" rel="noopener">STOCKHOLM 2025 咖啡桌</a>，深棕色橡木實木貼皮、實心橡木腳，圓形直徑 90 × 高 38，NT$6,499</li>
+        <li><a href="https://www.ikea.com.tw/zh/products/display-furniture/display-cabinets/milsbo-art-10396425" target="_blank" rel="noopener">MILSBO 玻璃門櫃</a>，白色鋁框、強化玻璃門與 3 片玻璃層板，73 × 42 × 175，NT$7,999（面對電視的左邊）</li>
         <li><a href="https://ikea.com.tw/en/products/sideboard-cabinets/system-cabinets/besta-spr-99612143" target="_blank" rel="noopener">BESTÅ 電視櫃</a>，白色/Lappviken 胡桃木紋，180 × 42 × 39，NT$6,000</li>
       </ul>
-    </section>
-
-    <section class="sec">
-      <h2>陽光（模擬）</h2>
-      <div class="row">
-        <label for="sun-az">陽光方位</label>
-        <output id="sun-az-out" for="sun-az">217°</output>
-      </div>
-      <input type="range" id="sun-az" min="0" max="359" step="1" value="217">
-      <div class="row">
-        <label for="sun-el">太陽高度</label>
-        <output id="sun-el-out" for="sun-el">55°</output>
-      </div>
-      <input type="range" id="sun-el" min="10" max="80" step="1" value="55">
-      <p class="lnote" id="sun-note">方位以平面圖上方為北（0° 北、90° 東、180° 南、270° 西），不是實際座向。</p>
-    </section>
-
-    <section class="sec">
-      <h2>剖切高度</h2>
-      <div class="row">
-        <label for="cut">牆體顯示到</label>
-        <output id="cut-out" for="cut">300 cm</output>
-      </div>
-      <input type="range" id="cut" min="30" max="300" step="10" value="300">
-      <div class="checks">
-        <label><input type="checkbox" id="spin"> 自動旋轉</label>
-      </div>
     </section>
 
     <section class="sec">
@@ -267,26 +374,45 @@ input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px;
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
+const MSG_SETTINGS_SAVE_FAIL = '無法儲存設定（瀏覽器可能封鎖本機儲存），重新載入後會回到預設值。';
+const MSG_SETTINGS_LOAD_FAIL = '無法讀取已儲存的設定，改用預設值。';
+const MSG_WALK_HINT = '點畫面走過去 · 拖曳轉頭 · 方向鍵／WASD 移動 · Esc 離開';
+const MSG_WALK_BLOCKED = '前方被擋住了，換個方向試試';
 const MSG_WEBGL_FAIL = '這個瀏覽器無法啟動 3D 繪圖（WebGL）。請改用最新版 Chrome、Edge 或 Safari 開啟。';
+// 設定載入完成前不寫入 localStorage（初始化時各區域會先用預設值建一次，不能蓋掉已儲存的設定）
+let settingsReady = false;
+let walkActive = false;   // 室內漫遊中：所有 rebuild 一律用完整牆高
 
 // ---------- 平面資料（cm，x 向右、y 向下，對應 SH3D 座標） ----------
-const WALL_H = 300;
+// ── 高度基準：只要改 WALL_H（室內淨高）與 SLAB_T（樓板厚），其他牆高、天花板、滑桿上限、上牆櫃位置都會跟著變 ──
+const WALL_H = 330;                 // 室內淨高（地面到天花板底）
+const SLAB_T = 15;                  // 樓板厚度
+const WALL_TOP = WALL_H + SLAB_T;   // 牆頂＝樓板頂，與陽台弧形天花板頂面齊平
+// 樑的高度：兩個常數分開記錄，之後拿到結構圖或現場量測可以各自調整
+const BEAM_TOP = WALL_TOP;          // 樑頂（cm）：與牆頂切齊
+const BEAM_BOTTOM = 270;            // 樑底離地（cm）：客戶單元圖沒有樑深，暫定天花板下 60 cm
 const CX = 620, CZ = 520;            // 模型中心
 const M = v => v / 100;               // cm → m
 
 // 牆：中心線 + 厚度，open = 開口（沿牆方向的絕對座標）
 const WALLS = [
   // 客浴室
-  { a: [66.6, 61.7],  b: [243.4, 61.7] },
-  { a: [66.6, 61.7],  b: [66.6, 337.7] },
-  { a: [243.4, 61.7], b: [243.4, 337.7], open: [{ from: 178, to: 228, sill: 110, head: 210, glass: true, style: 'frame' }] },
-  { a: [19.6, 337.7], b: [243.4, 337.7], open: [{ from: 158, to: 232 }] },
+  // ext = 朝外那一面（N/S/E/W），該面固定用外牆色，不跟著「牆面顏色」變；trimA / trimB = 該端不外延（同一直線拆段的交界）
+  { a: [66.6, 61.7],  b: [243.4, 61.7], ext: 'N' },
+  { a: [66.6, 61.7],  b: [66.6, 337.7], ext: 'W' },
+  { a: [243.4, 61.7], b: [243.4, 238.2], ext: 'E', trimB: true, open: [{ from: 178, to: 228, sill: 110, head: 210, glass: true, style: 'frame' }] },  // 客浴｜後陽台
+  { a: [243.4, 238.2], b: [243.4, 337.7], trimA: true },                                                                                            // 客浴｜餐廳
+  { a: [19.6, 337.7], b: [66.6, 337.7], ext: 'N', trimB: true },                    // 玄關北牆西段（北面朝室外）
+  { a: [66.6, 337.7], b: [243.4, 337.7], trimA: true, open: [{ from: 158, to: 232 }] },  // 客浴｜玄關
   // 玄關
-  { a: [19.6, 337.7], b: [19.6, 511.3], open: [{ from: 360, to: 460 }] },
-  { a: [19.6, 511.3], b: [228, 511.3] },
+  { a: [19.6, 337.7], b: [19.6, 511.3], ext: 'W', open: [{ from: 360, to: 460 }] },
+  { a: [19.6, 511.3], b: [228, 511.3], ext: 'S' },
   // 西外牆（廚房、主浴）
-  { a: [239.2, 491.7], b: [239.2, 978.3], t: 22 },
+  // 西外牆（厚 22）：北段（到玄關南牆 y 511.3）西側朝玄關＝室內牆；南段西側才朝外。兩端只外延 6.7（與 14 cm 牆面齊平，不凸出）
+  { a: [239.2, 491.7], b: [239.2, 511.3], t: 22, extA: 6.7, trimB: true },
+  { a: [239.2, 511.3], b: [239.2, 978.3], t: 22, ext: 'W', trimA: true, extB: 6.7 },
   // 廚房
   { id: 'kn', a: [243.4, 491.7], b: [486.4, 491.7], open: [{ from: 314, to: 420, head: 230 }] },  // 廚房北牆（廚房｜餐廳），可打除
   { id: 'ke', a: [486.4, 491.7], b: [486.4, 698.7] },                                             // 廚房東牆（廚房｜走道），打除時保留冰箱背後段
@@ -294,37 +420,36 @@ const WALLS = [
   // 主浴室
   { a: [412.7, 698.7], b: [412.7, 978.3], open: [{ from: 712, to: 790 }] },
   // 南外牆與主臥東牆
-  { a: [239.2, 978.3], b: [829, 978.3] },
-  { a: [829, 713.2],   b: [829, 978.3], open: [{ from: 735, to: 870, sill: 60, head: 220, glass: true, style: 'slide-window' }] },  // 依 PDF 磁簧開關位置
+  { a: [239.2, 978.3], b: [829, 978.3], ext: 'S' },
+  { a: [829, 713.2],   b: [829, 978.3], ext: 'E', open: [{ from: 735, to: 870, sill: 60, head: 220, glass: true, style: 'slide-window' }] },  // 依 PDF 磁簧開關位置
   // 臥室一
-  { id: 'b1n', a: [599.7, 491.7], b: [934.7, 491.7] },   // 臥室一北牆（客廳電視牆），可切換玻璃隔間
-  { a: [934.7, 491.7], b: [934.7, 713.2], open: [{ from: 530, to: 675, sill: 60, head: 220, glass: true, style: 'slide-window' }] },  // 實品屋照片：窗寬約 145、高約 160
-  { a: [599.7, 713.2], b: [934.7, 713.2] },
+  { id: 'b1n', a: [599.7, 491.7], b: [874.2, 491.7], trimB: true },   // 臥室一北牆（客廳電視牆），可切換玻璃隔間
+  { a: [874.2, 491.7], b: [934.7, 491.7], ext: 'N', trimA: true },     // 臥室一北牆東段（朝陽台）
+  { a: [934.7, 491.7], b: [934.7, 713.2], ext: 'E', open: [{ from: 530, to: 675, sill: 60, head: 220, glass: true, style: 'slide-window' }] },  // 實品屋照片：窗寬約 145、高約 160
+  { a: [599.7, 713.2], b: [829, 713.2], trimB: true },                // 臥室一｜主臥
+  { a: [829, 713.2], b: [934.7, 713.2], ext: 'S', trimA: true },        // 臥室一南牆東段（朝露台）
   { id: 'b1w', a: [599.7, 491.7], b: [599.7, 713.2], open: [{ from: 503, to: 590 }] },  // 臥室一西牆，走道側與北牆連動切換玻璃
   // 主臥門：橫跨走道、位於臥室一門口南側；臥室一西牆側有 10 cm 門擋小牆（尺寸圖「10」）
   { a: [486.4, 600], b: [599.7, 600], t: 12, open: [{ from: 493.4, to: 587.6 }] },
   // 餐廳 / 客廳
-  { a: [243.4, 238.2], b: [506.2, 238.2], open: [{ from: 252, to: 343, sill: 8, head: 240, glass: true, style: 'slide-door' }] },
-  { a: [506.2, 168.7], b: [506.2, 238.2] },
-  { a: [506.2, 168.7], b: [874.2, 168.7] },
-  { a: [874.2, 168.7], b: [874.2, 491.7], open: [{ from: 253.7, to: 473.7, sill: 8, head: 255, glass: true, style: 'slide-door' }] },  // 實品屋照片：寬高比約 0.89
+  { a: [243.4, 238.2], b: [506.2, 238.2], ext: 'N', open: [{ from: 252, to: 343, sill: 8, head: 240, glass: true, style: 'slide-door' }] },
+  { a: [506.2, 168.7], b: [506.2, 238.2], ext: 'W' },
+  { a: [506.2, 168.7], b: [874.2, 168.7], ext: 'N' },
+  { a: [874.2, 168.7], b: [874.2, 491.7], ext: 'E', open: [{ from: 253.7, to: 473.7, sill: 8, head: 255, glass: true, style: 'slide-door' }] },  // 實品屋照片：寬高比約 0.89
 ];
 
 // 女兒牆 / 欄杆（戶外）
 const PARAPETS = [
-  { a: [243.4, 61.7], b: [506.2, 61.7] },
-  { a: [506.2, 61.7], b: [506.2, 168.7], rail: true },
-  { a: [874.2, 61.7], b: [1106, 61.7] },       // 端點 + 外延 5.7 = 1111.7，比花台外緣（1112）內縮 3 mm，避免共平面閃爍
-  { a: [874.2, 61.7], b: [874.2, 168.7] },
-  { a: [965, 979],    b: [1106, 979] },        // 外側面 985：比東南角管道間（984.7）多 3 mm、與外牆線（985.3）差 3 mm
+  // 北側女兒牆：只有後陽台段（到第二段格柵 x 510）是實牆；x 510 以東改為銀白色直條欄杆（見 NORTH_RAIL）
+  { a: [243.4, 61.7], b: [510, 61.7], trimB: true },
 ];
 
 // 管道間 / 設備區（實心）
 const SHAFTS = [
   [59.6, 116.6, 54.7, 175.7],
   [250.4, 309.4, 874.3, 971.3],
-  [881.2, 967, 168.7, 238],
-  [836, 965, 881, 985.3],
+  [881.2, 967, 168.7, 238, true],     // 陽台東北角柱（室外，四面貼外牆磚）
+  [836, 965, 881, 985.3, true],       // 露台東南角柱（室外，四面貼外牆磚）
 ];
 
 // 花台（矮牆 + 植栽）
@@ -343,15 +468,23 @@ const ROOMS = [
   { id: 'gbath',   name: '客浴室', rect: [73.6, 236.4, 68.7, 330.7],   kind: 'tile', dim: '163 × 260', area: 3.81 },
   { id: 'entry',   name: '玄關',   rect: [26.6, 236.4, 344.7, 504.3],  kind: 'tile', dim: '200 × 160', area: 3.20 },
   { id: 'hall',    name: '走道',   rect: [479.4, 606.7, 484.7, 600],   kind: 'wood', dim: '99 × 115', area: 1.14, label: [543, 545] },
-  { id: 'bbal',    name: '後陽台', rect: [250.4, 506.2, 68.7, 231.2],  kind: 'deck', dim: '251 × 155', area: 3.89, out: true },
+  { id: 'bbal',    name: '後陽台', rect: [250.4, 506.2, 68.7, 231.2],  kind: 'deck', dim: '251 × 155', area: 7.38, out: true, extra: [[506.2, 881.2, 68.7, 161.7]] },  // 含客廳北側陽台 375 × 93，連通東側陽台
   { id: 'fbal',    name: '陽台',   rect: [881.2, 1058, 68.7, 484.7],   kind: 'deck', dim: '176 × 416', area: 6.76, out: true, label: [970, 360] },
   { id: 'side',    name: '側廊',   rect: [941.7, 1058, 484.7, 720.2],  kind: 'deck', dim: '68 × 236', area: 1.60, out: true, label: [1024, 600] },
   { id: 'terrace', name: '露台',   rect: [836, 1058, 720.2, 971.3],    kind: 'deck', dim: '156 × 251', area: 3.92, out: true, label: [980, 800] },
 ];
 const EXTRA_LABELS = [
-  { text: '挑式花台', at: [1166, 463] },
+  { text: '崁式花台', at: [1166, 463] },
 ];
-const BUMP = { x0: 1112, x1: 1220, y0: 273, y1: 654, r: 46 };
+const BUMP = { x0: 1112, x1: 1220, y0: 273, y1: 654, r: 46 };   // 地面崁式花台（原圖圓角外凸）
+// 陽台上方的弧形天花板（原圖客廳落地窗外的細線圓角輪廓）：從客廳東牆外到花台上方 x 1072，
+// 南北 y 243～553，東側兩角圓弧（半徑約 28）；臥室一外牆範圍（x < 941.7、y > 484.7）不覆蓋
+// 缺角切在臥室一北牆的北側面（484.7）與東牆外側面（941.7），天花板只接到牆邊、不壓到牆頂（同在 WALL_TOP 會互搶閃動）
+// 南段（小弧形天花板）：臥室一窗外 x 941.7～1012 往南到 y 780（東南角圓弧，半徑約 19），
+// 再往西收到 x 937，沿主臥窗外（x 836～937）往南到 y 881（接東南角柱）；臥室一牆體範圍不覆蓋
+// 北緣貼齊東北角柱南面（237.4）、南端貼齊東南角柱北面（881.6），與柱子接起來不留縫
+const CANOPY = { x0: 881.2, x1: 1072, y0: 237.4, y1: 553, r: 28, t: 15, cutX: 941.7, cutY: 484.7, sx1: 1012, sy1: 780, sr: 19,
+  mx0: 836, mx1: 937, my0: 720.2, my1: 881.6 };
 
 const FLOOR_COLOR = { wood: 0xc6a47a, tile: 0xd8dbd6, deck: 0x9a8b76 };
 
@@ -399,7 +532,8 @@ scene.add(sun);
 const P = (x, y) => [M(x - CX), M(y - CZ)];
 
 const mat = {
-  wall:    new THREE.MeshStandardMaterial({ color: 0xf2eee7, roughness: 0.92 }),
+  wall:    new THREE.MeshStandardMaterial({ color: 0xf2eee7, roughness: 0.92 }),   // 室內牆面（可由「牆面顏色」切換）
+  wallExt: null,   // 外牆面：外牆磚紋理（在 tileTex 建立後設定）
   cap:     new THREE.MeshStandardMaterial({ color: 0x343a38, roughness: 0.8 }),
   para:    new THREE.MeshStandardMaterial({ color: 0xe0dbd1, roughness: 0.9 }),
   shaft:   new THREE.MeshStandardMaterial({ color: 0x8b908d, roughness: 0.9 }),
@@ -414,6 +548,64 @@ const mat = {
   green:   new THREE.MeshStandardMaterial({ color: 0x6d8f4c, roughness: 1 }),
 };
 
+// 金屬用的局部環境反射：只指定給個別金屬材質（envMap），不設 scene.environment，整體光線不變
+const METAL_ENV = (() => {
+  const pm = new THREE.PMREMGenerator(renderer);
+  const t = pm.fromScene(new RoomEnvironment(), 0.04).texture;
+  pm.dispose();
+  return t;
+})();
+mat.steel.envMap = METAL_ENV; mat.steel.envMapIntensity = 1.0; mat.steel.needsUpdate = true;
+
+// 外牆磚紋理（依實品屋照片）：銀灰色仿花崗岩劈面磚（偏銀白、帶極淡的綠），30 × 7.5 cm 橫貼交丁，深灰磚縫，磚面帶深黑與白色橫向紋理
+// 紋理一張代表 120 × 60 cm（4 塊 × 8 排），以牆面實際尺寸換算 UV，磚的大小固定、相鄰牆段磚縫對齊
+const TILE_TEX_W = 120, TILE_TEX_H = 60;
+const tileTex = (() => {
+  const W = 1024, H = 512, cols = 4, rows = 8, tw = W / cols, th = H / rows, g = 4;
+  const c = document.createElement('canvas'); c.width = W; c.height = H;
+  const x = c.getContext('2d');
+  x.fillStyle = '#959a97'; x.fillRect(0, 0, W, H);                      // 磚縫（淺灰）
+  let seed = 7;
+  const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  for (let r = 0; r < rows; r++) {
+    const off = (r % 2) * tw / 2;
+    for (let k = -1; k < cols; k++) {
+      const x0 = k * tw + off + g / 2, y0 = r * th + g / 2, w = tw - g, hh = th - g;
+      const L = 76 + rnd() * 8;                                           // 每塊磚明度略有差異（更白的銀灰）
+      x.save();
+      x.beginPath(); x.rect(x0, y0, w, hh); x.clip();
+      x.fillStyle = `hsl(150, 3%, ${L}%)`; x.fillRect(x0, y0, w, hh);   // 銀灰，帶極淡的綠
+      for (let s = 0; s < 70; s++) {                                      // 橫向紋理：深色斑紋較少、較淡，白色較多（照片中的銀白花崗岩感）
+        const dark = rnd() < 0.4;
+        x.fillStyle = dark ? `rgba(52,58,55,${0.15 + rnd() * 0.3})` : `rgba(250,251,250,${0.45 + rnd() * 0.5})`;
+        x.fillRect(x0 + rnd() * w - 10, y0 + rnd() * hh, 6 + rnd() * 46, 1 + rnd() * 3);
+      }
+      x.restore();
+    }
+  }
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = 8;
+  return t;
+})();
+// 依牆面實際尺寸改寫某一面的 UV（faces：BoxGeometry 材質索引；a..b 沿牆方向、h0..h1 高度，單位 cm）
+// three.js BoxGeometry：+x、-z 面的 u 與座標反向，-x、+z 面同向；v 一律向上
+function tileUV(mesh, faces, a, b, h0, h1) {
+  const uv = mesh.geometry.attributes.uv, len = b - a, hgt = h1 - h0;
+  for (const fi of faces) {
+    const rev = fi === 0 || fi === 5, off = rev ? -b : a;
+    for (let i = fi * 4; i < fi * 4 + 4; i++) {
+      uv.setXY(i, (off + uv.getX(i) * len) / TILE_TEX_W, (h0 + uv.getY(i) * hgt) / TILE_TEX_H);
+    }
+  }
+  uv.needsUpdate = true;
+}
+mat.wallExt = new THREE.MeshStandardMaterial({ map: tileTex, color: 0xffffff, roughness: 0.85, side: THREE.DoubleSide, shadowSide: THREE.BackSide });
+mat.para.map = tileTex; mat.para.color.setHex(0xffffff); mat.para.roughness = 0.85; mat.para.needsUpdate = true;
+
+// 外牆朝外的面在 BoxGeometry 材質陣列中的索引：+x 東、-x 西、+z 南（平面 y 向下）、-z 北
+const EXT_FACE = { E: 0, W: 1, S: 4, N: 5 };
 function box(x0, x1, y0, y1, h0, h1, side, top = side, group) {
   if (x1 - x0 < 0.1 || y1 - y0 < 0.1 || h1 - h0 < 0.1) return null;
   const g = new THREE.BoxGeometry(M(x1 - x0), M(h1 - h0), M(y1 - y0));
@@ -430,22 +622,36 @@ function box(x0, x1, y0, y1, h0, h1, side, top = side, group) {
 }
 
 // 一道沿軸線的牆，依開口切成實牆、窗台、楣樑與玻璃
-function buildWall(w, cut, group, { h = WALL_H, side = mat.wall, t = w.t ?? 14 } = {}) {
+function buildWall(w, cut, group, { h = WALL_TOP, side = mat.wall, t = w.t ?? 14 } = {}) {
   const vertical = w.a[0] === w.b[0];
   const fixed = vertical ? w.a[0] : w.a[1];
   // 牆端外延半個牆厚包住轉角，但少 0.3 cm：T 字接頭時端面才不會剛好落在另一道牆的外表面上（共平面會出現垂直虛線）
   const ext = t / 2 - 0.3;
-  const s0 = Math.min(vertical ? w.a[1] : w.a[0], vertical ? w.b[1] : w.b[0]) - ext;
-  const s1 = Math.max(vertical ? w.a[1] : w.a[0], vertical ? w.b[1] : w.b[0]) + ext;
+  const s0 = Math.min(vertical ? w.a[1] : w.a[0], vertical ? w.b[1] : w.b[0]) - (w.trimA ? 0 : (w.extA ?? ext));
+  const s1 = Math.max(vertical ? w.a[1] : w.a[0], vertical ? w.b[1] : w.b[0]) + (w.trimB ? 0 : (w.extB ?? ext));
   const top = Math.min(h, cut);
   // 實牆從樓板底（-14）起算，蓋住室外地坪（-3）與室內地坪（0）之間露出的縫
   // （不要讓相鄰牆段重疊：同材質共平面重疊會在牆面產生細線與虛線）
   const piece = (a, b, h0, h1, m, thick = t) => {
     if (b - a < 0.1 || h1 - h0 < 0.1) return null;                  // 門口下方（高度為 0）不產生牆塊，避免頂面與地板重疊閃動
     if (h0 === 0 && !m.transparent) h0 = -14;
-    return vertical
+    const mesh = vertical
       ? box(fixed - thick / 2, fixed + thick / 2, a, b, h0, h1, m, m === mat.glass ? m : mat.cap, group)
       : box(a, b, fixed - thick / 2, fixed + thick / 2, h0, h1, m, m === mat.glass ? m : mat.cap, group);
+    if (mesh && w.ext && m === mat.wall) {                       // 朝外那一面改用外牆磚
+      mesh.material = mesh.material.slice();
+      mesh.material[EXT_FACE[w.ext]] = mat.wallExt;
+      tileUV(mesh, [EXT_FACE[w.ext]], a, b, h0, h1);
+      // 只有牆的真正末端（外轉角）貼外牆磚；門窗洞口側面維持室內牆色
+      // 端面索引：水平牆 -x(1) 在 a 端、+x(0) 在 b 端；垂直牆 -z(5) 在 a 端、+z(4) 在 b 端
+      const ends = [];
+      if (Math.abs(a - s0) < 0.01) ends.push(vertical ? 5 : 1);
+      if (Math.abs(b - s1) < 0.01) ends.push(vertical ? 4 : 0);
+      for (const fi of ends) mesh.material[fi] = mat.wallExt;
+      if (ends.length) tileUV(mesh, ends, fixed - thick / 2, fixed + thick / 2, h0, h1);
+    }
+    if (mesh && m === mat.para) tileUV(mesh, vertical ? [0, 1] : [4, 5], a, b, h0, h1);   // 女兒牆兩面都是外牆磚
+    return mesh;
   };
   let cur = s0;
   for (const o of [...(w.open || [])].sort((p, q) => p.from - q.from)) {
@@ -501,21 +707,60 @@ function buildRail(w, cut, group) {
   if (cut >= 110) b(106, 110, 6, mat.rail);
 }
 
-// 固定元素：地板、花台、挑式花台
+// 固定元素：地板、花台、崁式花台
 const floorMeshes = new Map();
 const extraFloors = [];
+// 牆下補片與門檻（打牆後露出的地面、門口下方），一律放在同一地板平面
+const FLOOR_PATCHES = [
+  { rect: [243.4, 479.4, 484.7, 498.7], kind: 'tile' },   // 廚房北牆下
+  { rect: [479.4, 493.4, 600, 705.7],   kind: 'wood' },   // 廚房東牆南段下
+  { rect: [158, 232, 330.7, 344.7],     kind: 'tile' },   // 客浴門檻
+  { rect: [12.6, 26.6, 360, 460],       kind: 'tile' },   // 玄關大門門檻
+  { rect: [405.7, 419.7, 712, 790],     kind: 'tile' },   // 主浴門檻
+];
+// 同材質相鄰的地板，在相接的那一邊外延 0.6 cm 互相重疊，蓋掉接縫（接縫顯示時會斷續裂開成虛線）。
+// 同材質、同高度、同顏色的重疊不會閃；不同材質的交界維持不重疊。
+const ALL_FLOORS = [
+  ...ROOMS.flatMap(r => [r.rect, ...(r.extra || [])].map(rect => ({ rect, kind: r.kind, out: !!r.out }))),
+  ...FLOOR_PATCHES.map(p => ({ ...p, out: false })),
+];
+function expandedRect(f) {
+  const [x0, x1, y0, y1] = f.rect, E = 0.6, eq = (p, q) => Math.abs(p - q) < 0.05;
+  const span = (a0, a1, b0, b1) => Math.min(a1, b1) - Math.max(a0, b0) > 0.05;
+  const adj = side => ALL_FLOORS.filter(g => g !== f && g.out === f.out && (
+    side === 'W' ? eq(g.rect[1], x0) && span(y0, y1, g.rect[2], g.rect[3]) :
+    side === 'E' ? eq(g.rect[0], x1) && span(y0, y1, g.rect[2], g.rect[3]) :
+    side === 'N' ? eq(g.rect[3], y0) && span(x0, x1, g.rect[0], g.rect[1]) :
+                   eq(g.rect[2], y1) && span(x0, x1, g.rect[0], g.rect[1])));
+  // 這一邊接到的鄰居全部同材質才外延（只要有一個不同材質就不外延，避免不同顏色重疊互搶）
+  const touch = side => { const n = adj(side); return n.length > 0 && n.every(g => g.kind === f.kind); };
+  return [x0 - (touch('W') ? E : 0), x1 + (touch('E') ? E : 0), y0 - (touch('N') ? E : 0), y1 + (touch('S') ? E : 0)];
+}
+for (const p of FLOOR_PATCHES) {
+  const pm = new THREE.MeshStandardMaterial({ color: FLOOR_COLOR[p.kind], roughness: p.kind === 'tile' ? 0.6 : 0.85 });
+  const [a0, a1, b0, b1] = expandedRect(ALL_FLOORS.find(f => f.rect === p.rect));
+  const pmesh = box(a0, a1, b0, b1, -14, 0, pm);
+  pmesh.castShadow = false;
+  pmesh.userData.floor = true;
+}
 for (const r of ROOMS) {
   const [x0, x1, y0, y1] = r.rect;
   const m = new THREE.MeshStandardMaterial({ color: FLOOR_COLOR[r.kind], roughness: r.kind === 'tile' ? 0.6 : 0.85, emissive: 0x000000 });
+  // 地板維持原尺寸與同一高度（錯開高度會在交界產生極細台階、顯示成虛線）
   const top = r.out ? -3 : 0;
-  const mesh = box(x0, x1, y0, y1, -14, top, m);
+  const [a0, a1, b0, b1] = expandedRect(ALL_FLOORS.find(f => f.rect === r.rect));
+  const mesh = box(a0, a1, b0, b1, -14, top, m);
   mesh.castShadow = false;
   mesh.userData.room = r.id;
+  mesh.userData.floor = true;
   floorMeshes.set(r.id, mesh);
   for (const [ex0, ex1, ey0, ey1] of r.extra || []) {   // 同一空間的附加地板，共用材質以便一起標亮
-    const em = box(ex0, ex1, ey0, ey1, -14, top, m);
+    const ex = r.extra.find(q => q[0] === ex0 && q[2] === ey0);
+    const [c0, c1, d0, d1] = expandedRect(ALL_FLOORS.find(f => f.rect === ex));
+    const em = box(c0, c1, d0, d1, -14, top, m);
     em.castShadow = false;
     em.userData.room = r.id;
+    em.userData.floor = true;
     extraFloors.push(em);
   }
 }
@@ -523,18 +768,9 @@ for (const [x0, x1, y0, y1] of PLANTERS) {
   // 貼齊地板邊、從樓板底起算（之前內縮 4 mm 會在花台與陽台地板之間留一條白縫）
   box(x0, x1, y0, y1, -14, 60, mat.planter, mat.green);
 }
-// 室內底板：每個室內空間往外延伸到牆內、頂面在 -0.3 cm。地板之間的接縫或門檻縫看下去會是底板而不是背景的白色
+// （不使用地板下方的底板：底板邊緣在部分顯示卡上會透過地板顯示成虛線；地板已是雙面顯示，接縫裂開時看到的是相鄰地板的同色側面）
 {
-  const base = new THREE.MeshStandardMaterial({ color: 0x9c8a70, roughness: 0.9 });
-  for (const r of ROOMS) {
-    if (r.out) continue;
-    for (const [x0, x1, y0, y1] of [r.rect, ...(r.extra || [])]) {
-      // 外延 13.4（比牆厚少 0.6，不碰外牆表面）、底部 -13.9（不低於牆底），避免從室外看到底板邊緣閃動
-      box(x0 - 13.4, x1 + 13.4, y0 - 13.4, y1 + 13.4, -13.9, -0.3, base).castShadow = false;
-    }
-  }
-}
-{
+  // 地面崁式花台（原圖圓角外凸）
   const { x0, x1, y0, y1, r } = BUMP;
   const s = new THREE.Shape();
   const pts = (x, y) => { const [px, pz] = P(x, y); return [px, -pz]; };
@@ -549,6 +785,39 @@ for (const [x0, x1, y0, y1] of PLANTERS) {
   m.position.y = M(-14);
   m.castShadow = m.receiveShadow = true;
   scene.add(m);
+}
+// 陽台弧形天花板（在 rebuild 中依剖切高度建立：剖切低於牆高時隱藏，方便俯看陽台）
+// 頂面與柱子／牆頂同色（mat.cap 深炭灰）；側邊淺灰；底面另加一片淺灰（從陽台往上看是淺色天花板）
+const canopyEdgeMat = new THREE.MeshStandardMaterial({ color: 0xc9cdca, roughness: 0.7, side: THREE.DoubleSide, shadowSide: THREE.BackSide });
+// 底面淺灰：天花板底面永遠在自己的陰影裡，不接收陰影並加一點自發光，模擬室外的散射光，維持淺灰色
+const canopySoffitMat = new THREE.MeshStandardMaterial({ color: 0xd9dcda, roughness: 0.85, side: THREE.DoubleSide, emissive: 0x9a9d9b, emissiveIntensity: 0.45 });
+function buildCanopy(cut, group) {
+  if (cut < WALL_H + 1) return;                       // 剖切到天花板（WALL_H）以上才顯示
+  const { x0, x1, y0, y1, r, t, cutX, cutY, sx1, sy1, sr, mx0, mx1, my0, my1 } = CANOPY;
+  const s = new THREE.Shape();
+  const pts = (x, y) => { const [px, pz] = P(x, y); return [px, -pz]; };
+  const mv = (x, y) => s.moveTo(...pts(x, y)), ln = (x, y) => s.lineTo(...pts(x, y));
+  const qc = (cx, cy, x, y) => { const [a, b] = pts(cx, cy), [c, d] = pts(x, y); s.quadraticCurveTo(a, b, c, d); };
+  mv(x0, y0);
+  ln(x1 - r, y0); qc(x1, y0, x1, y0 + r);      // 東北角圓弧
+  ln(x1, y1 - r); qc(x1, y1, x1 - r, y1);      // 北段東南角圓弧
+  ln(sx1, y1);                                  // 往西接到南段
+  ln(sx1, sy1 - sr); qc(sx1, sy1, sx1 - sr, sy1);   // 南段東南角圓弧（臥室一窗外）
+  ln(mx1, sy1); ln(mx1, my1); ln(mx0, my1);        // 往西收，沿主臥窗外往南到東南角柱
+  ln(mx0, my0); ln(cutX, my0);                     // 沿臥室一南牆外側回到臥室一東牆
+  ln(cutX, cutY); ln(x0, cutY); ln(x0, y0);
+  const depth = Math.min(t, cut - WALL_H);             // 剖切在 WALL_H～WALL_TOP 之間時只顯示部分厚度
+  const geo = new THREE.ExtrudeGeometry(s, { depth: M(depth), bevelEnabled: false, curveSegments: 16 });
+  const m = new THREE.Mesh(geo, [mat.cap, canopyEdgeMat]);
+  m.rotation.x = -Math.PI / 2;
+  m.position.y = M(WALL_H);                 // 底面在天花板高度（WALL_H），厚 t
+  m.castShadow = m.receiveShadow = true;
+  group.add(m);
+  const soffit = new THREE.Mesh(new THREE.ShapeGeometry(s, 16), canopySoffitMat);   // 淺色底面（略低 0.3 cm，不與頂板底面重疊）
+  soffit.rotation.x = -Math.PI / 2;
+  soffit.position.y = M(WALL_H - 0.3);
+  soffit.receiveShadow = false;
+  group.add(soffit);
 }
 
 // 主臥：南牆插座（依 PDF 換算，距主臥西牆面 419.7）與 5 尺雙人床
@@ -680,7 +949,8 @@ function buildLayout(key) {
   scene.add(g);
   layoutGroup = g;
   document.getElementById('layout-note').textContent = L.note;
-  for (const k of Object.keys(LAYOUTS)) document.getElementById('l-' + k).setAttribute('aria-pressed', String(k === key));
+  document.getElementById('sel-layout').value = key;
+  updateSummary();
 }
 
 // 可重建元素：牆、女兒牆、管道間（隨剖切高度變化）
@@ -696,7 +966,7 @@ const FRAMES = {
   black: { name: '黑細框', desc: '黑色鋁框' },
   white: { name: '白框', desc: '白色鋁框，與牆面同色' },
 };
-const partition = { mode: 'solid', waist: 90, frame: 'none' };
+const partition = { mode: 'glass', waist: 90, frame: 'none' };   // 預設：腰牆＋上方玻璃
 partition.glassType = 'clear';   // clear = 透明、reeded = 長虹玻璃
 // 長虹玻璃：直向圓弧紋路，紋距約 2 cm，半透光
 const reededTex = (() => {
@@ -729,7 +999,7 @@ function partitionWall(w) {
   if (!p || partition.mode !== 'glass') return w;
   const reeded = w.id === 'b1n' && partition.glassType === 'reeded';     // 長虹玻璃只用在腰牆上方
   const glassMat = reeded ? reededMat(p.to - p.from) : partition.frame === 'none' ? mat.clear : mat.glass;
-  return { ...w, open: [{ from: p.from, to: p.to, sill: p.sill ?? partition.waist, head: Infinity, glass: true, glassMat }] };
+  return { ...w, open: [{ from: p.from, to: p.to, sill: p.sill ?? partition.waist, head: WALL_H, glass: true, glassMat }] };   // 玻璃到天花板（WALL_H），上方為樓板邊
 }
 function buildPartitionFrame(cut, group) {
   if (partition.mode !== 'glass') return;
@@ -794,6 +1064,12 @@ const TV = {
 const SOFA = { x0: TV.cx - 105.5, x1: TV.cx + 105.5, y0: 175.7, y1: 263.7, seat: 43, back: 80, arm: 72, armW: 26.5, backD: 29, leg: 14 };
 // IKEA BESTÅ 電視櫃（白色/Lappviken 棕色胡桃木紋）：180 × 42 × 39
 const BENCH = { w: 180, d: 42, h: 39 };
+// IKEA MILSBO 玻璃門櫃（白色）：73 × 42 × 175，強化玻璃門與 3 片玻璃層板；放在「面對電視的左邊」，緊貼電視櫃（間隔 0）
+const VITRINE = { w: 73, d: 42, h: 175, gap: 0 };
+// 木作吊櫃（白色、按壓式門片無把手）：客廳北側結構牆牆到牆做滿（x 513.2～867.2，淨寬 354），一路做到天花板，
+// 櫃內包覆上方管線；櫃底切齊樑的下緣（BEAM_BOTTOM），門片依各段寬度平均分割，每片約 60 cm
+// 遇到凸出室內的樑（東側大樑）時，櫃子做到樑的側面為止，樑下不再做櫃
+const CARPCAB = { x0: 513.2, x1: 867.2, d: 40, doorW: 60 };
 // IKEA STOCKHOLM 2025 咖啡桌（深棕色橡木實木貼皮，實心橡木腳）：圓形直徑 90、高 38
 const COFFEE = { dia: 90, h: 38, gap: 38 };
 const tvMat = {
@@ -805,9 +1081,10 @@ const tvMat = {
   cab:    new THREE.MeshStandardMaterial({ color: 0xf3f2ee, roughness: 0.7 }),
   walnut: new THREE.MeshStandardMaterial({ color: 0x7a5536, roughness: 0.6 }),
   walnutTop: new THREE.MeshStandardMaterial({ color: 0x5f4129, roughness: 0.45 }),   // STOCKHOLM 胡桃木
+  vitrine: new THREE.MeshStandardMaterial({ color: 0xf2f2f0, roughness: 0.35, metalness: 0.3 }),   // MILSBO 白色鋁框
 };
 let tvGroup = null;
-const living = { swap: false };
+const living = { swap: true };   // 預設：電視靠結構牆（客廳北側外牆）
 const LIVING_MIRROR = 175.7 + 484.7;   // 客廳北牆內面 + 南側（臥室一牆）牆面
 const boxRaw = (...a) => box(...a), Praw = (...a) => P(...a), gapLabelRaw = (...a) => gapLabel(...a);
 function buildTV() {
@@ -838,6 +1115,59 @@ function buildTV() {
     const B = BENCH, bf = TV.wallFace - B.d;
     box(TV.cx - B.w / 2, TV.cx + B.w / 2, bf + 1.6, TV.wallFace, 0, B.h, tvMat.cab, tvMat.cab, g);     // BESTÅ 櫃體
     box(TV.cx - B.w / 2 + 0.5, TV.cx + B.w / 2 - 0.5, bf, bf + 1.6, 1, B.h - 1, tvMat.walnut, tvMat.walnut, g); // Lappviken 門板
+  }
+  {
+    // MILSBO 展示櫃：面對電視的左邊。電視在隔間牆（人面向南）→ 左邊是東；電視在結構牆（人面向北）→ 左邊是西
+    const V = VITRINE, B = BENCH;
+    const vx0 = swap ? TV.cx - B.w / 2 - V.gap - V.w : TV.cx + B.w / 2 + V.gap, vx1 = vx0 + V.w;
+    const vf = TV.wallFace - V.d, vb = TV.wallFace, wm = tvMat.vitrine, gl = mat.clear;
+    for (const px of [vx0, vx1 - 2.5]) for (const py of [vf, vb - 2.5]) box(px, px + 2.5, py, py + 2.5, 0, V.h, wm, wm, g);   // 四角鋁框立柱
+    box(vx0, vx1, vf, vb, 8, 10, wm, wm, g);                         // 底板（離地 8 cm）
+    box(vx0, vx1, vf, vb, V.h - 2, V.h, wm, wm, g);                  // 頂板
+    box(vx0 + 2.5, vx1 - 2.5, vb - 1, vb, 10, V.h - 2, wm, wm, g);   // 背板
+    box(vx0 + 2.5, vx1 - 2.5, vf, vf + 0.6, 10, V.h - 2, gl, gl, g); // 玻璃門
+    box(vx0, vx0 + 0.6, vf + 2.5, vb - 2.5, 10, V.h - 2, gl, gl, g); // 側面玻璃
+    box(vx1 - 0.6, vx1, vf + 2.5, vb - 2.5, 10, V.h - 2, gl, gl, g);
+    for (const sh of [50, 90, 130]) box(vx0 + 2.5, vx1 - 2.5, vf + 1, vb - 1, sh, sh + 0.8, gl, gl, g);   // 3 片玻璃層板
+    box(vx1 - 6, vx1 - 4.5, vf - 1.5, vf, 80, 110, wm, wm, g);       // 門把
+    const vl = document.createElement('div');
+    vl.className = 'lbl';
+    vl.innerHTML = `IKEA MILSBO 玻璃門櫃<small>白 · ${V.w} × ${V.d} × ${V.h}</small>`;
+    const vo = new CSS2DObject(vl);
+    { const [px, pz] = P((vx0 + vx1) / 2, (vf + vb) / 2); vo.position.set(px, M(V.h + 20), pz); }
+    g.add(vo);
+  }
+  {
+    // 木作吊櫃：一律在客廳北側結構牆（電視靠結構牆時在電視上方，靠隔間牆時在沙發上方）
+    // 用未鏡射的 boxRaw / Praw，位置固定在北牆，不跟著電視與沙發互換移動
+    const box = boxRaw, P = Praw;
+    const C = CARPCAB, cb = tvMat.cab;
+    const NWALL = 175.7, cback = NWALL + 0.3, cf = NWALL + C.d;                  // 北牆內面、櫃子正面朝南（離牆 0.3 避免共平面）
+    const top = WALL_H - 0.3, h0 = BEAM_BOTTOM;                                  // 到頂（低 0.3 cm 避免與漫遊時的天花板共平面）、櫃底切齊樑底
+    // 依樑切段：與櫃子平面重疊的樑，在該 x 範圍把櫃頂降到樑底
+    const cuts = [C.x0 + 0.3, C.x1 - 0.3];
+    const hitBeams = BEAMS.filter(b => b.x1 > C.x0 && b.x0 < C.x1 && b.y1 > cback && b.y0 < cf);
+    for (const b of hitBeams) cuts.push(Math.max(C.x0 + 0.3, b.x0), Math.min(C.x1 - 0.3, b.x1));
+    const xs = [...new Set(cuts.map(v => Math.round(v * 10) / 10))].sort((a, b) => a - b);
+    for (let i = 0; i < xs.length - 1; i++) {
+      const a = xs[i], b = xs[i + 1], mid = (a + b) / 2;
+      if (b - a < 1) continue;
+      const under = hitBeams.filter(bm => bm.x0 <= mid && bm.x1 >= mid);
+      const segTop = under.length ? BEAM_BOTTOM - 0.3 : top;
+      if (segTop - h0 < 10) continue;                                             // 樑下：櫃子做到樑側為止
+      const n = Math.max(1, Math.round((b - a) / C.doorW)), dw = (b - a) / n;
+      box(a, b, cback, cf - 1.8, h0, segTop, cb, cb, g);                         // 櫃體（含包管線的空間）
+      for (let k = 0; k < n; k++) {
+        const da = a + k * dw, db = da + dw;
+        box(da + 0.3, db - 0.3, cf - 1.8, cf, h0 + 0.3, segTop - 0.3, cb, cb, g); // 門片（按壓式，無把手）
+      }
+    }
+    const cl = document.createElement('div');
+    cl.className = 'lbl';
+    cl.innerHTML = `木作吊櫃（到頂包管線）<small>白 · 櫃底切齊樑底 · 離地 ${h0}～${WALL_H}</small>`;
+    const co = new CSS2DObject(cl);
+    { const [px, pz] = P((C.x0 + C.x1) / 2, cf); co.position.set(px, M(WALL_H - 20), pz); }
+    g.add(co);
   }
   if (glass) {
     const B = BENCH;
@@ -903,17 +1233,18 @@ function buildTV() {
     `<li>尺寸 ${TV.w} × ${TV.h} cm；螢幕中心離地 <b>${Math.round(center)} cm</b>，下緣 ${Math.round(h0)} cm、上緣 ${Math.round(h1)} cm。</li>` +
     `<li>坐姿眼高約 ${TV.eyeH} cm，觀看距離約 ${dist} cm（${(dist / TV.diag).toFixed(1)} 倍對角線），視線${angleTxt}，在舒適範圍（±10° 以內）。</li>` +
     (swap
-      ? `<li>電視壁掛於客廳北牆（外牆），下方放 IKEA BESTÅ 電視櫃（180 × 42 × 39，櫃面到電視下緣約 ${Math.round(h0 - BENCH.h)} cm），沙發靠臥室一牆。原圖電視與網路插座在臥室一牆，互換後要在北牆新拉電源、電視與網路線到電視背後約 FL+90 cm；臥室一牆的原插座可改給沙發旁的落地燈、手機充電使用。</li>` +
+      ? `<li>電視壁掛於客廳北牆（外牆），下方放 IKEA BESTÅ 電視櫃（180 × 42 × 39，櫃面到電視下緣約 ${Math.round(h0 - BENCH.h)} cm），上方做木作吊櫃（牆到牆 ${Math.round(CARPCAB.x1 - CARPCAB.x0)} cm、深 ${CARPCAB.d} cm，高度：${BEAM_BOTTOM}～${WALL_H} 公分，櫃底切齊樑的下緣、做到天花板包覆上方管線，櫃底距電視上緣約 ${Math.round(BEAM_BOTTOM - h1)} cm；東端做到東側大樑的側面為止），沙發靠臥室一牆。原圖電視與網路插座在臥室一牆，互換後要在北牆新拉電源、電視與網路線到電視背後約 FL+90 cm；臥室一牆的原插座可改給沙發旁的落地燈、手機充電使用。</li>` +
         (partition.mode === 'glass' && partition.waist < WALL_H ? `<li>沙發靠背高 80 cm，${partition.waist >= 80 ? '低於' : '高於'}腰牆 ${partition.waist} cm${partition.waist >= 80 ? '，從臥室一看出去不會被沙發擋到' : '，沙發靠背會露在玻璃前'}。</li>` : '')
       : glass
         ? `<li>上方為玻璃無法壁掛，以電視原廠雙腳（腳高約 ${TV.foot} cm，左右各內縮 ${TV.footInset} cm）直接立在 IKEA BESTÅ 電視櫃（180 × 42 × 39，白色/胡桃木紋門板）上。</li>`
-        : `<li>壁掛於電視牆，中心對齊客廳中軸，下方放 IKEA BESTÅ 電視櫃（180 × 42 × 39，櫃面到電視下緣約 ${Math.round(h0 - BENCH.h)} cm）。原電視與網路插座（FL+30 cm）會被電視櫃擋住，建議重拉線路時改到電視背後約 FL+90 cm。</li>`);
-  for (const k of ['normal', 'swap']) document.getElementById('lv-' + k).setAttribute('aria-pressed', String((k === 'swap') === swap));
+        : `<li>沙發靠北側結構牆，沙發上方做木作吊櫃（牆到牆，高度：${BEAM_BOTTOM}～${WALL_H} 公分，櫃底切齊樑的下緣、到頂包覆管線）。</li><li>壁掛於電視牆，中心對齊客廳中軸，下方放 IKEA BESTÅ 電視櫃（180 × 42 × 39，櫃面到電視下緣約 ${Math.round(h0 - BENCH.h)} cm）。原電視與網路插座（FL+30 cm）會被電視櫃擋住，建議重拉線路時改到電視背後約 FL+90 cm。</li>`);
+  document.getElementById('sel-living').value = swap ? 'swap' : 'normal';
+  updateSummary();
 }
 
 // 餐廳：IKEA NORDEN 摺疊桌（樺木）26/89/152 × 80 × 74，中段 26 cm 抽屜桌身 + 兩片 63 cm 桌板
 //   daily：一片桌板放下，桌端靠北牆（y 245.2），長 89，2 張椅子面對面
-//   guest：拉離牆面、兩片桌板掀起，長 152，置中，每側 3 張椅子
+//   guest：北端維持靠牆不動、兩片桌板掀起往南延伸到 152，每側 3 張椅子
 // 長邊南北向、偏東放，西側留走道通往後陽台門（252～343）與玄關；廚房開口在南側
 // 餐椅：IKEA PS 2026（亮綠色/Knäbäck 亮綠色，44 × 55 × 76，座寬 38、座深 38、座高 47，軟墊座面與靠背，實木漆腳）
 const DINING = { cx: 430, w: 80, h: 74, body: 26, leaf: 63, wall: 245.2, guestCy: 365, chairW: 44, chairD: 55, chairH: 76, seat: 47, tuck: 10 };
@@ -923,6 +1254,8 @@ const diningMat = {
   greenLeg: new THREE.MeshStandardMaterial({ color: 0x349445, roughness: 0.45 }), // 亮綠色漆實木腳
 };
 let diningGroup = null, diningMode = 'daily';
+let diningLoc = 'area';            // area = 餐廳靠北牆；fridge = 冰箱旁（平日模式，桌端貼冰箱北側，需廚房打通）
+const FRIDGE_N = 556;              // 冰箱北側面 y（冰箱 556～626）
 function buildDining(mode) {
   if (diningGroup) {
     diningGroup.traverse(o => { if (o.isCSS2DObject) o.element.remove(); o.geometry && o.geometry.dispose(); });
@@ -930,13 +1263,23 @@ function buildDining(mode) {
   }
   diningMode = mode;
   const g = new THREE.Group(), D = DINING, birch = diningMat.birch, fab = diningMat.green, leg = diningMat.greenLeg;
-  const tx0 = D.cx - D.w / 2, tx1 = D.cx + D.w / 2;
   const guest = mode === 'guest';
+  const atFridge = diningLoc === 'fridge';                         // 冰箱旁：平日與宴客都從冰箱北側往北延伸
+  const cx = atFridge ? 439.4 : D.cx;                               // 冰箱旁：桌身與冰箱（x 409.4～479.4）東緣對齊
+  const tx0 = cx - D.w / 2, tx1 = cx + D.w / 2;
   // 沿 y 方向的桌段 [y0, y1]
   let ty0, ty1, bodyY0;
-  if (guest) {
-    ty0 = D.guestCy - (D.body + 2 * D.leaf) / 2; ty1 = ty0 + D.body + 2 * D.leaf;
+  if (guest && atFridge) {
+    // 延伸桌：貼冰箱那一端（南端）不動，兩片桌板掀起往北拉長到 152
+    ty1 = FRIDGE_N - 2.5; ty0 = ty1 - (D.body + 2 * D.leaf);
     bodyY0 = ty0 + D.leaf;
+  } else if (guest) {
+    // 延伸桌：靠牆那一端（北端）位置與平日相同、不移動，只把桌子往南拉長到 152
+    ty0 = D.wall + 2.5; ty1 = ty0 + D.body + 2 * D.leaf;
+    bodyY0 = ty0 + D.leaf;
+  } else if (atFridge) {
+    ty1 = FRIDGE_N - 2.5; bodyY0 = ty1 - D.body; ty0 = bodyY0 - D.leaf;   // 放下的桌板垂在冰箱與桌身之間，掀起的桌板朝北
+    box(tx0 + 1, tx1 - 1, FRIDGE_N - 2.3, FRIDGE_N - 0.3, 10, D.h - 3, birch, birch, g);
   } else {
     bodyY0 = D.wall + 2.5;                                          // 放下的桌板垂在牆與桌身之間
     ty0 = bodyY0; ty1 = bodyY0 + D.body + D.leaf;
@@ -945,7 +1288,7 @@ function buildDining(mode) {
   box(tx0 + 4, tx1 - 4, bodyY0, bodyY0 + D.body, 2, D.h - 3, birch, birch, g);        // 抽屜桌身
   box(tx0, tx1, ty0, ty1, D.h - 3, D.h, birch, birch, g);                              // 桌面
   // 撐腳（gate leg）：掀起的桌板末端各兩支
-  const legsAt = guest ? [ty0 + 4, ty1 - 8] : [ty1 - 8];
+  const legsAt = guest ? [ty0 + 4, ty1 - 8] : atFridge ? [ty0 + 4] : [ty1 - 8];   // 宴客兩端都有撐腳
   for (const ly of legsAt) for (const lx of [tx0 + 6, tx1 - 10]) box(lx, lx + 4, ly, ly + 4, 0, D.h - 3, birch, birch, g);
 
   // 椅子：dir = +1 面向東（椅背在西）、-1 面向西
@@ -967,6 +1310,7 @@ function buildDining(mode) {
   const len = ty1 - ty0;
   const seatsY = guest
     ? [1, 3, 5].map(k => ty0 + len * k / 6)
+    : atFridge ? [ty0 + D.leaf / 2]                                  // 冰箱旁：坐在朝北掀起的桌板兩側
     : [bodyY0 + D.body + D.leaf / 2];                                 // 平日：坐在掀起的桌板兩側
   for (const cy of seatsY) { chair(wx, cy, 1); chair(ex, cy, -1); }
 
@@ -974,17 +1318,28 @@ function buildDining(mode) {
   el.className = 'lbl';
   el.innerHTML = `IKEA NORDEN＋PS 2026<small>${Math.round(len)} × 80 · 亮綠餐椅 ×${seatsY.length * 2}</small>`;
   const o = new CSS2DObject(el);
-  { const [px, pz] = P(D.cx, (ty0 + ty1) / 2); o.position.set(px, 1.0, pz); }
+  { const [px, pz] = P(cx, (ty0 + ty1) / 2); o.position.set(px, 1.0, pz); }
   g.add(o);
   const back = wx - D.chairD / 2;                                                    // 西側椅背位置
-  gapLabel(`走道 ${Math.round(back - 250.4)} cm`, (250.4 + back) / 2, (ty0 + ty1) / 2, g);
-  if (guest) gapLabel(`${Math.round(ty0 - D.wall)} cm`, D.cx, (D.wall + ty0) / 2, g);
-  gapLabel(`${Math.round(484.7 - ty1)} cm`, D.cx, (ty1 + 484.7) / 2, g);
+  const eback = ex + D.chairD / 2;                                                   // 東側椅背位置
+  if (atFridge) {
+    gapLabel(`廚房走道 ${Math.round(back - 312.4)} cm`, (312.4 + back) / 2, (ty0 + ty1) / 2, g);
+    gapLabel(`走道 ${Math.round(592.7 - eback)} cm`, (eback + 592.7) / 2, (ty0 + ty1) / 2, g);
+  } else {
+    gapLabel(`走道 ${Math.round(back - 250.4)} cm`, (250.4 + back) / 2, (ty0 + ty1) / 2, g);
+    gapLabel(`${Math.round(484.7 - ty1)} cm`, D.cx, (ty1 + 484.7) / 2, g);
+  }
   scene.add(g);
   diningGroup = g;
-  for (const k of ['daily', 'guest']) document.getElementById('d-' + k).setAttribute('aria-pressed', String(k === mode));
-  document.getElementById('dining-note').textContent = guest
-    ? `兩片桌板掀起，桌長 152 cm，從牆邊拉出置中，每側 3 張椅子共 6 人。南北兩端各留約 ${Math.round(ty0 - D.wall)}～${Math.round(484.7 - ty1)} cm，西側走道維持 ${Math.round(back - 250.4)} cm。`
+  document.getElementById('sel-dining').value = mode;
+  document.getElementById('sel-dloc').value = diningLoc;
+  updateSummary();
+  document.getElementById('dining-note').textContent = atFridge && guest
+    ? `延伸桌貼冰箱那一端不動，兩片桌板掀起往北延伸到 152 cm，每側 3 張椅子共 6 人。西側椅背到流理台剩約 ${Math.round(back - 312.4)} cm，東側椅子伸進餐廳與走道，走道剩約 ${Math.round(592.7 - eback)} cm。`
+    : atFridge
+    ? `桌子放在冰箱旁：一片桌板放下垂在冰箱北側，桌長 89 cm 朝北延伸，2 張椅子東西面對面。西側椅背到流理台剩約 ${Math.round(back - 312.4)} cm 廚房走道，東側椅子伸進走道，走道剩約 ${Math.round(592.7 - eback)} cm。餐廳整區空出來。`
+    : guest
+    ? `延伸桌北端維持貼著北牆不動，兩片桌板掀起往南延伸到 152 cm，每側 3 張椅子共 6 人。南側到廚房開口留約 ${Math.round(484.7 - ty1)} cm，西側走道維持 ${Math.round(back - 250.4)} cm。`
     : `一片桌板放下垂在牆邊，桌長 89 cm，桌端靠北牆，2 張椅子面對面。南側留出約 ${Math.round(484.7 - ty1)} cm 的空地。`;
 }
 
@@ -1090,7 +1445,7 @@ function fixLabel(html, x, y, h, g) {
 }
 
 // 廚房隔間：open = 北牆只留遮住流理台的西段（到流理台邊 x 312.4）、東牆從冰箱北端（y 556，外延 7 cm）保留到南端，遮住冰箱與電器櫃
-const kitchen = { open: false };
+const kitchen = { open: true };   // 預設：打通（留冰箱與電器櫃牆）
 const FRIDGE_Y = [556, 626];
 const COUNTER_X1 = 312.4;
 function kitchenWall(w) {
@@ -1099,32 +1454,416 @@ function kitchenWall(w) {
   if (w.id === 'ke') return { ...w, a: [486.4, FRIDGE_Y[0]], open: [] };   // 保留冰箱＋電器櫃背後，到廚房南牆
   return w;
 }
-// 牆下方的地板補片（打牆後露出的地面；平時藏在牆下）
+
+
+// 後陽台東端的冷氣室外機區與格柵（依原圖「A/C」方框）：高約 100 cm 的直立鋁格柵（深古銅）
+//   第一段格柵：L 形圍住冷氣室外機區（西側 x=426、南側 y=214），室外機區 x 426～499、y 68～214
+//   第二段格柵：後陽台與客廳北側陽台交界（x≈510），橫跨陽台
+const AC_ZONE = { x0: 426, x1: 499.2, y0: 67.7, y1: 214 };
+const GRILLE_H = 100;
 {
-  const tile = new THREE.MeshStandardMaterial({ color: FLOOR_COLOR.tile, roughness: 0.6 });
-  const wood = new THREE.MeshStandardMaterial({ color: FLOOR_COLOR.wood, roughness: 0.85 });
-  box(243.4, 479.4, 484.7, 498.7, -14, 0, tile).castShadow = false;   // 北牆下
-  box(479.4, 493.4, 600, 705.7, -14, 0, wood).castShadow = false;     // 東牆南段下
-  // 門檻：門口下方原本沒有地板（兩側地板之間留縫，會看到背景色白線）
-  box(158, 232, 330.7, 344.7, -14, 0, tile).castShadow = false;       // 客浴門
-  box(12.6, 26.6, 360, 460, -14, 0, tile).castShadow = false;         // 玄關大門
-  box(405.7, 419.7, 712, 790, -14, 0, tile).castShadow = false;       // 主浴門
+  const g = new THREE.Group(), H = GRILLE_H, Z = AC_ZONE;
+  const bronze = new THREE.MeshStandardMaterial({ color: 0x4b4037, roughness: 0.5, metalness: 0.4 });
+  const acMat = new THREE.MeshStandardMaterial({ color: 0xe9eae6, roughness: 0.6 });
+  const acFan = new THREE.MeshStandardMaterial({ color: 0x55595b, roughness: 0.5 });
+  // 直立格柵：沿 y（x 固定）或沿 x（y 固定）排列，條寬 3、深 6、間距 9，含上框
+  const grilleAlongY = (gx, ya, yb) => {
+    for (let y = ya + 3; y < yb - 2; y += 9) box(gx - 3, gx + 3, y, y + 3, -3, H, bronze, bronze, g);
+    box(gx - 3, gx + 3, ya, yb, H - 3, H, bronze, bronze, g);
+  };
+  const grilleAlongX = (gy, xa, xb) => {
+    for (let x = xa + 3; x < xb - 2; x += 9) box(x, x + 3, gy - 3, gy + 3, -3, H, bronze, bronze, g);
+    box(xa, xb, gy - 3, gy + 3, H - 3, H, bronze, bronze, g);
+  };
+  grilleAlongY(Z.x0, Z.y0, Z.y1 + 3);          // 第一段：西側
+  grilleAlongX(Z.y1, Z.x0, Z.x1);              // 第一段：南側
+  grilleAlongY(510, 67.7, 161.7);              // 第二段：與客廳北側陽台區隔
+  {
+    // 一般尺寸室外機 80 × 30 × 60（示意）×2，用室外機架上下疊放：背靠東側牆、出風朝西
+    const AC = { w: 80, d: 30, h: 60 }, ya = (Z.y0 + Z.y1) / 2 - AC.w / 2, yb = ya + AC.w;
+    const xa = Z.x1 - AC.d - 1, xb = Z.x1 - 1;
+    const rack = new THREE.MeshStandardMaterial({ color: 0x8d9091, roughness: 0.5, metalness: 0.6 });
+    for (const [h0, h1] of [[5, 5 + AC.h], [75, 75 + AC.h]]) {
+      box(xa, xb, ya, yb, h0, h1, acMat, acMat, g);
+      ell(xa - 0.5, ya + 52, 0.6, 18, h0 + 6, h1 - 6, acFan, g);                   // 風扇格柵（示意）
+      box(xa - 2, xb, ya - 2, yb + 2, h0 - 3, h0, rack, rack, g);                 // 機架層板
+    }
+    for (const px of [xa - 2, xb - 3]) for (const py of [ya - 2, yb - 1]) box(px, px + 3, py, py + 3, -3, 140, rack, rack, g);   // 機架立柱
+  }
+  {
+    // 後陽台洗手台（原圖「洗槽混合龍頭」與洗槽排水口位置）：靠北側女兒牆，60 × 50 × 85，白色櫃體＋不鏽鋼水槽（示意）
+    const SK = { x0: 258, x1: 318, y0: 68.5, d: 50, h: 85 }, y1 = SK.y0 + SK.d;
+    const white = new THREE.MeshStandardMaterial({ color: 0xf3f3f1, roughness: 0.6 });
+    const st = mat.steel, dark = new THREE.MeshStandardMaterial({ color: 0x7d8285, roughness: 0.3, metalness: 0.8 });
+    box(SK.x0, SK.x1, SK.y0, y1, -3, SK.h - 3, white, white, g);                      // 櫃體
+    box(SK.x0, SK.x1, SK.y0, y1, SK.h - 3, SK.h, st, st, g);                          // 不鏽鋼檯面
+    box(SK.x0 + 6, SK.x1 - 6, SK.y0 + 8, y1 - 6, SK.h - 0.4, SK.h + 0.1, dark, dark, g);   // 水槽（示意）
+    const fx = (SK.x0 + SK.x1) / 2;
+    box(fx - 2, fx + 2, SK.y0 - 1, SK.y0 + 4, SK.h + 10, SK.h + 30, st, st, g);       // 壁掛龍頭
+    box(fx - 1.2, fx + 1.2, SK.y0 + 2, SK.y0 + 20, SK.h + 24, SK.h + 27, st, st, g);  // 出水管
+    box(SK.x0 + 2, SK.x1 - 2, y1, y1 + 1, 30, 32, st, st, g);                         // 櫃門把手
+    const sl = document.createElement('div');
+    sl.className = 'lbl out';
+    sl.innerHTML = '洗手台<small>60 × 50 × 85</small>';
+    const so = new CSS2DObject(sl);
+    { const [px, pz] = P(fx, (SK.y0 + y1) / 2); so.position.set(px, 1.3, pz); }
+    g.add(so);
+  }
+  {
+    // 直立式洗衣機（示意）60 × 65 × 100：洗手台東側，靠北牆（原圖洗衣機出水口與專用插座位置）
+    const WM = { x0: 326, x1: 386, y0: 68.5, d: 65, h: 100 }, y1 = WM.y0 + WM.d;
+    const white = new THREE.MeshStandardMaterial({ color: 0xf6f6f4, roughness: 0.4 });
+    const lid = new THREE.MeshStandardMaterial({ color: 0x9aa4aa, roughness: 0.15, metalness: 0.3, transparent: true, opacity: 0.7 });
+    box(WM.x0, WM.x1, WM.y0, y1, -3, WM.h - 6, white, white, g);                         // 機身
+    box(WM.x0, WM.x1, WM.y0, WM.y0 + 15, WM.h - 6, WM.h, white, white, g);                // 後方控制面板
+    box(WM.x0 + 4, WM.x1 - 4, WM.y0 + 17, y1 - 4, WM.h - 6, WM.h - 4.5, lid, lid, g);    // 上蓋（示意）
+    const wl = document.createElement('div');
+    wl.className = 'lbl out';
+    wl.innerHTML = '洗衣機<small>直立式 60 × 65 × 100（示意）</small>';
+    const wo = new CSS2DObject(wl);
+    { const [px, pz] = P((WM.x0 + WM.x1) / 2, (WM.y0 + y1) / 2); wo.position.set(px, 1.4, pz); }
+    g.add(wo);
+
+    // 熱水器（示意）36 × 20 × 60：北側只有 110 cm 矮牆，改掛在西側客浴外牆（x 250.4 面），離地 140～200
+    const HW = { y0: 95, y1: 131, d: 20, h0: 140, h1: 200 }, hx = 250.4;
+    box(hx, hx + HW.d, HW.y0, HW.y1, HW.h0, HW.h1, white, white, g);
+    box(hx + 6, hx + 12, HW.y0 + 14, HW.y0 + 22, HW.h1, HW.h1 + 25, mat.steel, mat.steel, g);   // 排氣管
+    const hl = document.createElement('div');
+    hl.className = 'lbl out';
+    hl.innerHTML = '熱水器<small>掛西側外牆（示意）</small>';
+    const ho = new CSS2DObject(hl);
+    { const [px, pz] = P(hx + 10, (HW.y0 + HW.y1) / 2); ho.position.set(px, 2.25, pz); }
+    g.add(ho);
+  }
+  {
+    // 銀白色直條欄杆（高 110，與原本矮牆同高）：北側從第二段格柵到東端；露台南端短側從東南角柱到花台外緣
+    // 銀白色：場景沒有環境反射，金屬度高會變暗發褐，所以用低金屬度、亮色
+    // 銀白色鋁欄杆：金屬材質＋局部環境反射（METAL_ENV），帶出銀色的亮暗光澤；不影響場景其他物件的光線
+    // 取中間值：淺銀色、中等金屬度保留光澤，再加一點冷灰自發光，避免陰影中反射暖色地面而發褐
+    const silver = new THREE.MeshStandardMaterial({ color: 0xf0f2f4, roughness: 0.25, metalness: 0.45, envMap: METAL_ENV, envMapIntensity: 1.3, emissive: 0x8f969c, emissiveIntensity: 0.35 });
+    const H = 110;
+    const railX = (x0, x1, yc) => {                                    // 沿 x 方向的欄杆（y 固定）
+      for (let x = x0 + 4; x < x1 - 2; x += 10) box(x, x + 2, yc - 2, yc + 2, -3, H - 5, silver, silver, g);   // 直條
+      box(x0, x1, yc - 3, yc + 3, H - 5, H, silver, silver, g);         // 扶手
+      box(x0, x1, yc - 2.5, yc + 2.5, -3, 3, silver, silver, g);        // 底框
+      for (let x = x0; x <= x1 - 5; x += 150) box(x, x + 5, yc - 3, yc + 3, -3, H, silver, silver, g);         // 立柱
+      box(x1 - 5, x1, yc - 3, yc + 3, -3, H, silver, silver, g);        // 端柱
+    };
+    // 欄杆整組放在最外緣：連較細的直條在內都比花台／外牆外緣再往外 ≥1 cm，東端端柱也凸出花台外緣，
+    // 所有面之間至少差 1 cm（3 mm 在遠處會分不清前後而閃動）
+    // 北側：直條 y 53～57、上下框 y 52～58（花台外緣 56、後陽台矮牆外緣 55.7）
+    railX(510, 1114, 55);
+    // 南側：直條 y 986～990、上下框 y 985～991（花台外緣 984.7、外牆線 985.3）
+    railX(964.4, 1114, 988);
+  }
+  const el = document.createElement('div');
+  el.className = 'lbl out';
+  el.innerHTML = '冷氣室外機區<small>2 台上下疊放 · 格柵高約 100 cm</small>';
+  const o = new CSS2DObject(el);
+  { const [px, pz] = P((Z.x0 + Z.x1) / 2, (Z.y0 + Z.y1) / 2); o.position.set(px, 1.2, pz); }
+  g.add(o);
+  scene.add(g);
+}
+
+
+// 玄關櫃（前淺後深，沿玄關南牆內面 y 504.3），兩段都做到天花板（WALL_H）：
+//   前段（靠大門）x 30～131.6：深 30（不卡門片）。90～130 為 40 cm 中空開放層（露出牆上 FL+120 的開關與控制面板），
+//     中空正下方左右兩個抽屜（鑰匙、口罩、證件），抽屜下方為鞋櫃（左右門），櫃底懸空 20 放常穿的鞋；懸空處與中空開放層都有 LED 間接照明；中空以上為上櫃
+//   後段（往餐廳）x 131.6～227.9（與牆面切齊）：深 45，落地到天花板整面封閉收納（鞋子、外套、吸塵器）
+// 後段東端與西外牆（厚 22，中心 239.2）的西側面 228.2 切齊，內縮 0.3 避免共平面閃動
+const ENTRY_CAB = { wall: 504.3, fx0: 30, split: 131.6, bx1: 227.9, fd: 30, lift: 20, bd: 45, bh: WALL_H, niche: [90, 130], drawerRow: [72, 90], midSplit: 110 };   // 抽屜左右並排一排（72～90），下方 20～72 為鞋櫃
+// 上櫃與下櫃層板橫跨整個櫃寬；只有中櫃（hangBottom～hangTop）有中隔板：吊掛區＋層板區
+// 下櫃 5 層、上櫃 4 層放鞋（鞋尖朝內、鞋跟朝外），層板橫跨整個櫃寬；中櫃 hangBottom～hangTop 有中隔板
+const ENTRY_BACK = { hangW: 60, hangTop: 240, hangBottom: 100, shoeLevels: [1.8, 20, 40, 60, 80, 240, 262, 285, 307], fullShelves: [20, 40, 60, 80, 100, 240, 262, 285, 307], midShelves: [147, 194], handles: [85, 165, 255] };   // 兩區門片同高分割，把手同高
+{
+  const g = new THREE.Group(), E = ENTRY_CAB;
+  const white = new THREE.MeshStandardMaterial({ color: 0xf2f1ec, roughness: 0.55 });
+  const oak = new THREE.MeshStandardMaterial({ color: 0xc9a67a, roughness: 0.6 });
+  const seam = new THREE.MeshStandardMaterial({ color: 0xd9d7d0, roughness: 0.6 });
+  const pull = new THREE.MeshStandardMaterial({ color: 0x8c8f91, roughness: 0.35, metalness: 0.5 });
+  // 相接的零件一律內縮 0.3 cm，不與高櫃側面共平面（雙面顯示時共平面會互搶閃動）
+  const sp = E.split - 0.3, fy0 = E.wall - E.fd, xm = E.fx0 + (sp - E.fx0) / 2;
+  // ── 前段（中空＋抽屜）──
+  box(E.fx0, sp, fy0, E.wall, E.lift, E.niche[0] - 3, white, white, g);                  // 下櫃（抽屜＋鞋櫃）
+  box(E.fx0, sp, fy0 - 1, E.wall - 0.3, E.niche[0] - 3, E.niche[0], oak, oak, g);        // 中空底板（橡木檯面）
+  box(E.fx0, sp, fy0, E.wall, E.niche[1], E.bh, white, white, g);                         // 上櫃
+  box(E.fx0, sp, fy0 - 1, E.wall - 0.3, E.niche[1], E.niche[1] + 2, oak, oak, g);        // 中空頂板（橡木）
+  {
+    // 兩個抽屜左右並排：抽屜與鞋櫃之間的水平分割線、左右分割線、各自把手
+    const [d0, d1] = E.drawerRow, dc = (d0 + d1) / 2;
+    box(E.fx0 + 0.5, sp - 0.5, fy0 - 0.2, fy0, d0 - 0.3, d0 + 0.3, seam, seam, g);
+    box(xm - 0.3, xm + 0.3, fy0 - 0.2, fy0, d0 + 0.5, d1 - 0.5, seam, seam, g);
+    for (const cx of [(E.fx0 + xm) / 2, (xm + sp) / 2]) box(cx - 7, cx + 7, fy0 - 1.5, fy0, dc - 0.8, dc + 0.8, pull, pull, g);
+    box(xm - 0.3, xm + 0.3, fy0 - 0.2, fy0, E.lift + 2, d0 - 1, seam, seam, g);          // 鞋櫃左右門分割線
+  }
+  box(xm - 0.3, xm + 0.3, fy0 - 0.2, fy0, E.niche[1] + 2, E.bh - 2, seam, seam, g);          // 上櫃門分割線
+  {
+    // 間接照明：懸空處（櫃底）與中空開放層（上櫃底部）各一條 LED 燈條＋暖色光暈（靠牆最亮、往外漸淡）＋小範圍點光源
+    const led = new THREE.MeshBasicMaterial({ color: 0xfff1d6 });
+    const c = document.createElement('canvas'); c.width = 4; c.height = 64;
+    const cx2 = c.getContext('2d'), grd = cx2.createLinearGradient(0, 0, 0, 64);
+    grd.addColorStop(0, 'rgba(255,214,150,0.45)'); grd.addColorStop(0.55, 'rgba(255,214,150,0.18)'); grd.addColorStop(1, 'rgba(255,214,150,0)');
+    cx2.fillStyle = grd; cx2.fillRect(0, 0, 4, 64);
+    const glowTex = new THREE.CanvasTexture(c); glowTex.colorSpace = THREE.SRGBColorSpace;
+    const glowMat = new THREE.MeshBasicMaterial({ map: glowTex, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending });
+    // stripH：燈條高度（貼在上方板底）；surfH：光暈落在的面；reach：光暈往外延伸長度
+    const lightUp = (stripH, surfH, reach, power) => {
+      box(E.fx0 + 2, sp - 2, E.wall - 6, E.wall - 4, stripH - 0.6, stripH, led, led, g);   // LED 燈條（靠牆側）
+      const glow = new THREE.Mesh(new THREE.PlaneGeometry(M(sp - E.fx0 - 2), M(reach)), glowMat);
+      glow.rotation.x = -Math.PI / 2;
+      { const [px, pz] = P((E.fx0 + sp) / 2, E.wall - reach / 2); glow.position.set(px, M(surfH + 0.4), pz); }
+      g.add(glow);                                                   // 貼圖上緣（最亮）朝牆
+      const pl = new THREE.PointLight(0xffd9a0, power, 1.2, 2);
+      { const [px, pz] = P((E.fx0 + sp) / 2, E.wall - 10); pl.position.set(px, M(stripH - 4), pz); }
+      g.add(pl);
+    };
+    lightUp(E.lift, 0, E.fd + 18, 0.5);                              // 懸空處：照在地面，往外多延伸 18 cm
+    lightUp(E.niche[1], E.niche[0], E.fd, 0.4);                      // 中空開放層：照在橡木檯面
+  }
+  const by0 = E.wall - E.bd;
+  // 前段與後段交接的側板（後段比前段深 15 cm）
+  box(E.split - 1.5, E.split - 0.3, by0 + 0.3, fy0 - 0.3, 0.3, E.bh - 0.3, white, white, g);
+  const el = document.createElement('div');
+  el.className = 'lbl';
+  el.innerHTML = `玄關櫃<small>前段深 ${E.fd}・中空 ${E.niche[0]}～${E.niche[1]}＋左右抽屜＋鞋櫃 ／ 後段深 ${E.bd}・吊掛區＋層板區（點一下看內裝）</small>`;
+  // 目前配置：玄關說明
+  document.getElementById('sum-entry').textContent = `玄關櫃（前淺 ${E.fd}／後深 ${E.bd} cm，到天花板）`;
+  document.getElementById('entry-note').innerHTML =
+    `<li>沿玄關南牆，總長約 ${Math.round(E.bx1 - E.fx0)} 公分，分前後兩段，都做到天花板（高度：${E.bh} 公分）。大門開到底時門片在靠南牆側，所以門片掃過的範圍內做淺、開完之後才變深。</li>` +
+    `<li>前段（靠大門，長約 ${Math.round(E.split - E.fx0)} 公分、深 ${E.fd} 公分），由下往上：` +
+      `懸空（高度：${E.lift} 公分，LED 間接照明，可放常穿的鞋）、` +
+      `鞋櫃左右門（高度：${E.drawerRow[0] - E.lift} 公分）、` +
+      `左右兩個抽屜（高度：${E.drawerRow[1] - E.drawerRow[0]} 公分，放鑰匙、口罩、證件）、` +
+      `中空開放層（高度：${E.niche[1] - E.niche[0]} 公分，上櫃底部有 LED 燈條，橡木檯面放包包，牆上的開關與淨流風機控制面板露在這裡）、` +
+      `上櫃（高度：${E.bh - E.niche[1]} 公分）。</li>` +
+    `<li>後段（往餐廳，長約 ${Math.round(E.bx1 - E.split)} 公分、深 ${E.bd} 公分，到天花板），門片在同樣高度分三段、把手左右同高靠中間：` +
+      `下櫃（高度：${ENTRY_BACK.hangBottom} 公分）層板橫跨整個櫃寬，分 5 層放鞋；` +
+      `中櫃（高度：${ENTRY_BACK.hangTop - ENTRY_BACK.hangBottom} 公分）以中隔板分成吊掛區寬 ${ENTRY_BACK.hangW} 公分（側拉掛衣桿）與層板區寬約 ${Math.round(E.bx1 - E.split - ENTRY_BACK.hangW - 3 * 1.8)} 公分（摺疊衣物）；` +
+      `上櫃（高度：${E.bh - ENTRY_BACK.hangTop} 公分）層板橫跨整個櫃寬，分 4 層放換季鞋或鞋盒。` +
+      `鞋子一律鞋尖朝內、鞋跟朝外前後直放（內深約 ${E.bd - 4} 公分、鞋長約 23～30 公分），上下櫃每層約 4～5 雙，共約 36～45 雙。</li>` +
+    `<li>櫃深 ${E.bd} 公分不夠一般橫向吊掛（約需 55～60 公分），所以用側拉式掛衣桿，衣服改成前後方向收納。可在區域設定「玄關櫃顯示」或直接點後段切換外觀／內裝。</li>` +
+    `<li>木作／系統櫃示意（白色櫃體、橡木色檯面），不是 IKEA 現成品。上櫃離地約 200 公分以上的部分需要梯子，適合放換季物品。</li>`;
+  const o = new CSS2DObject(el);
+  { const [px, pz] = P((E.fx0 + E.bx1) / 2, E.wall - 30); o.position.set(px, 1.5, pz); }
+  g.add(o);
+  scene.add(g);
+}
+
+// 玄關櫃後段（x 131.6～227.9，長約 96、深 45、到天花板）：可切換「外觀」（關門）與「內裝」（拿掉門片）
+//   上櫃與下櫃層板橫跨整個櫃寬（不分區）；只有中櫃有中隔板：吊掛區（側拉掛衣桿，掛一件完整外套示意）＋層板區（摺疊衣物）
+let entryInterior = false, entryBackGroup = null;
+function buildEntryBack() {
+  if (entryBackGroup) { entryBackGroup.traverse(o => { if (o.isCSS2DObject) o.element.remove(); o.geometry && o.geometry.dispose(); }); scene.remove(entryBackGroup); }
+  const g = new THREE.Group(), E = ENTRY_CAB, B = ENTRY_BACK, T = 1.8;
+  const white = new THREE.MeshStandardMaterial({ color: 0xf2f1ec, roughness: 0.55 });
+  const inner = new THREE.MeshStandardMaterial({ color: 0xe8e5dd, roughness: 0.6 });   // 內部稍暗，和門片區分
+  const seam = new THREE.MeshStandardMaterial({ color: 0xd9d7d0, roughness: 0.6 });
+  const pull = new THREE.MeshStandardMaterial({ color: 0x8c8f91, roughness: 0.35, metalness: 0.5 });
+  const by0 = E.wall - E.bd, x0 = E.split, x1 = E.bx1, H = E.bh;
+  const ax0 = x0 + T, ax1 = ax0 + B.hangW, dx0 = ax1, dx1 = ax1 + T, bx0 = dx1, bx1 = x1 - T;   // 吊掛區 / 中隔板 / 層板區
+  const iy0 = by0 + T;                                               // 門片後方
+  // 櫃體（側板、頂板、底板、背板、中隔板）
+  box(x0, ax0, iy0, E.wall, 0, H, white, white, g);
+  box(bx1, x1, iy0, E.wall, 0, H, white, white, g);
+  box(ax0, bx1, iy0, E.wall, H - T, H, white, white, g);
+  box(ax0, bx1, iy0, E.wall, 0, T, white, white, g);
+  box(ax0, bx1, E.wall - 1, E.wall, T, H - T, inner, inner, g);
+  box(dx0, dx1, iy0, E.wall - 1, B.hangBottom, B.hangTop - T, white, white, g);   // 中隔板：只在中櫃
+  // 上櫃、下櫃：層板橫跨整個櫃寬
+  for (const hh of B.fullShelves) box(ax0, bx1, iy0, E.wall - 1, hh - T, hh, inner, inner, g);
+  // 中櫃吊掛區：側拉掛衣桿與衣服
+  const cx = (ax0 + ax1) / 2;
+  box(cx - 4, cx + 4, E.wall - 8, E.wall - 1, B.hangTop - T - 4, B.hangTop - T, mat.steel, mat.steel, g);   // 後端固定座
+  box(cx - 1.2, cx + 1.2, iy0 + 3, E.wall - 2, B.hangTop - T - 8, B.hangTop - T - 5, mat.steel, mat.steel, g);   // 側拉軌道
+  box(cx - 0.6, cx + 0.6, iy0 + 3, E.wall - 2, B.hangTop - T - 12, B.hangTop - T - 10, mat.steel, mat.steel, g);  // 掛桿
+  {
+    // 一件完整外套（示意）掛在側拉掛衣桿上，衣面朝前：肩寬 46、衣長約 90，對照吊掛區寬 60
+    const coat = new THREE.MeshStandardMaterial({ color: 0x6f7f8c, roughness: 0.95 });
+    const collar = new THREE.MeshStandardMaterial({ color: 0x55636e, roughness: 0.95 });
+    const cy = iy0 + (E.bd - T) / 2, y0 = cy - 3, y1 = cy + 3;       // 衣服在櫃深中央，厚 6
+    const hookTop = B.hangTop - T - 10, sh = hookTop - 12;              // sh：肩線高度
+    box(cx - 0.4, cx + 0.4, cy - 0.4, cy + 0.4, sh + 1, hookTop, mat.steel, mat.steel, g);                 // 衣架鉤
+    box(cx - 21, cx + 21, cy - 0.6, cy + 0.6, sh - 1, sh + 1, mat.steel, mat.steel, g);                     // 衣架
+    box(cx - 6, cx + 6, y0 - 0.5, y1 + 0.5, sh - 2, sh + 3, collar, collar, g);                             // 領口
+    box(cx - 23, cx + 23, y0, y1, sh - 14, sh, coat, coat, g);                                              // 肩部
+    box(cx - 19, cx + 19, y0, y1, sh - 90, sh - 14, coat, coat, g);                                          // 衣身
+    for (const s of [-1, 1]) box(cx + s * 19.3, cx + s * 23.5, y0 + 0.5, y1 - 0.5, sh - 72, sh - 14, coat, coat, g);   // 袖子
+    box(cx - 0.4, cx + 0.4, y0 - 0.6, y0, sh - 88, sh - 16, collar, collar, g);                              // 前襟
+  }
+  // 層板區：全部層板
+  const fold = [0x9fb0b8, 0xc9b9a3, 0x7c8a7a, 0xb7a6b5];
+  B.midShelves.forEach(hh => box(bx0, bx1, iy0, E.wall - 1, hh - T, hh, inner, inner, g));   // 中櫃層板區的層板
+  if (entryInterior) {                                                // 摺疊衣物（示意）：中櫃層板區與上櫃
+    const spots = [[bx0, bx1, B.hangBottom], ...B.midShelves.map(hh => [bx0, bx1, hh])];   // 摺疊衣物只放中櫃層板區
+    spots.forEach(([sx0, sx1, hh], i) => {
+      if (hh + 26 >= H) return;
+      const fm = new THREE.MeshStandardMaterial({ color: fold[i % fold.length], roughness: 0.95 });
+      const wdt = Math.min(sx1 - sx0 - 4, 40);
+      for (let x = sx0 + 2; x + wdt <= sx1 - 2 + 0.1; x += wdt + 3) box(x, x + wdt, iy0 + 4, E.wall - 4, hh, hh + 14 + (i % 2) * 6, fm, fm, g);
+    });
+  }
+  if (entryInterior) {
+    // 鞋子（示意）：上下櫃每層 4 雙，鞋尖朝內（背板）、鞋跟朝外（門片），一雙約 19 cm 寬、28 cm 長
+    const shoeCols = [0x2f3337, 0xe9e6df, 0x7a5a3c, 0x55606b, 0xb8452f, 0x3e5a46];
+    let si = 0;
+    const pairW = 19, gap = (bx1 - ax0 - 4 * pairW) / 5;
+    for (const lv of B.shoeLevels) {
+      for (let p = 0; p < 4; p++) {
+        const sm = new THREE.MeshStandardMaterial({ color: shoeCols[si++ % shoeCols.length], roughness: 0.7 });
+        const px = ax0 + gap + p * (pairW + gap);
+        for (const sx of [px, px + pairW / 2 + 0.5]) {
+          const hy0 = iy0 + 4, ty1 = hy0 + 28;                         // 鞋跟在前、鞋尖在後
+          box(sx, sx + pairW / 2 - 0.5, hy0, ty1, lv, lv + 3, sm, sm, g);              // 鞋底
+          box(sx + 0.5, sx + pairW / 2 - 1, hy0, hy0 + 18, lv + 3, lv + 10, sm, sm, g); // 鞋身（靠鞋跟）
+          box(sx + 0.8, sx + pairW / 2 - 1.3, hy0 + 18, ty1 - 2, lv + 3, lv + 6, sm, sm, g);   // 鞋頭
+        }
+      }
+    }
+  }
+  // 門片：外觀時顯示（關門），內裝時隱藏；抽屜面板不隱藏
+  if (!entryInterior) {
+    const dm = white;
+    const xm = ax1 + T / 2;                                          // 兩區門片交界（中隔板中心）
+    for (const [h0, h1] of [[0, B.hangBottom], [B.hangBottom, B.hangTop], [B.hangTop, H]]) {
+      box(x0 + 0.3, xm - 0.3, by0, iy0, h0 + 0.3, h1 - 0.3, dm, dm, g);   // 吊掛區門（下／中／上）
+      box(xm + 0.3, x1 - 0.3, by0, iy0, h0 + 0.3, h1 - 0.3, dm, dm, g);   // 層板區門（與吊掛區同高分割）
+    }
+    for (const hz of B.handles) for (const hx of [xm - 4, xm + 4])        // 把手：左右同高、靠中間分隔線
+      box(hx - 0.8, hx + 0.8, by0 - 1.5, by0, hz - 8, hz + 8, pull, pull, g);
+  }
+  g.traverse(o => { if (o.isMesh) o.userData.entryBack = true; });
+  scene.add(g);
+  entryBackGroup = g;
+  const sel = document.getElementById('sel-entry');
+  if (sel) sel.value = entryInterior ? 'inside' : 'outside';
+}
+buildEntryBack();
+
+// 洞洞板（木工訂做，孔距 25 mm）：貼滿廚房北牆西段朝餐廳／玄關的那一面（牆面 y 484.7），
+// x 229～311.5、離地 10 到樑底；2 個登山背包上下排，登山杖一副掛在旁邊（示意）
+const PEGBOARD = { x0: 229, x1: 311.5, face: 484.7, h0: 10, h1: BEAM_BOTTOM - 2, t: 1.2 };   // 上緣做到廚房北側樑的樑底
+{
+  const g = new THREE.Group(), PB = PEGBOARD;
+  // 洞洞板貼圖：淺色木夾板、圓孔 ø6 mm、孔距 25 mm（貼圖一張代表 10 × 10 cm，4 × 4 孔）
+  const c = document.createElement('canvas'); c.width = 128; c.height = 128;
+  const x = c.getContext('2d');
+  x.fillStyle = '#d9bf98'; x.fillRect(0, 0, 128, 128);
+  for (let k = 0; k < 14; k++) {                                        // 木紋
+    x.fillStyle = `rgba(150,110,70,${0.05 + Math.random() * 0.08})`;
+    x.fillRect(0, Math.random() * 128, 128, 1 + Math.random() * 2);
+  }
+  x.fillStyle = '#4a3a2a';
+  for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) {
+    x.beginPath(); x.arc(i * 32 + 16, j * 32 + 16, 3.8, 0, Math.PI * 2); x.fill();
+  }
+  const tex = new THREE.CanvasTexture(c);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping; tex.colorSpace = THREE.SRGBColorSpace;
+  tex.repeat.set((PB.x1 - PB.x0) / 10, (PB.h1 - PB.h0) / 10);
+  const peg = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.6 });
+  const edge = new THREE.MeshStandardMaterial({ color: 0xd9bf98, roughness: 0.6 });
+  const by0 = PB.face - 0.3 - PB.t, by1 = PB.face - 0.3;                // 離牆 0.3，不與牆面共平面
+  const board = box(PB.x0, PB.x1, by0, by1, PB.h0, PB.h1, edge, edge, g);
+  board.material = board.material.slice(); board.material[5] = peg;     // 朝北（餐廳側）那一面用洞洞板貼圖
+  const steel = mat.steel;
+  // 登山背包：背帶貼板、包身往外凸；頂蓋、側袋、腰帶
+  const pack = (cx, top, color, accent) => {
+    const m = new THREE.MeshStandardMaterial({ color, roughness: 0.85 }), a = new THREE.MeshStandardMaterial({ color: accent, roughness: 0.85 });
+    box(cx - 1, cx + 1, by0 - 4, by0, top + 2, top + 6, steel, steel, g);          // 掛勾
+    box(cx - 15, cx + 15, by0 - 21, by0 - 3, top - 55, top - 4, m, m, g);          // 包身
+    box(cx - 14, cx + 14, by0 - 22, by0 - 4, top - 6, top + 1, a, a, g);           // 頂蓋
+    box(cx - 10, cx + 10, by0 - 23, by0 - 20, top - 45, top - 20, a, a, g);        // 前袋
+    for (const s of [-1, 1]) {
+      box(cx + s * 15, cx + s * 18, by0 - 17, by0 - 7, top - 50, top - 28, a, a, g);   // 側袋
+      box(cx + s * 7 - 2.5, cx + s * 7 + 2.5, by0 - 3, by0 - 1, top - 50, top - 2, a, a, g);   // 背帶
+    }
+    box(cx - 17, cx + 17, by0 - 6, by0 - 2, top - 54, top - 48, a, a, g);          // 腰帶
+  };
+  pack(254, 262, 0xd8632a, 0x3b3f42);                                    // 上：橘色背包
+  pack(254, 167, 0x2f7f86, 0x2b3134);                                    // 下：藍綠色背包
+  // 登山杖一副（兩支），直掛在背包右側
+  for (const px of [289, 296]) {
+    box(px - 1, px + 1, by0 - 3, by0, 223, 226, steel, steel, g);                  // 掛勾
+    ell(px, by0 - 3, 1.6, 1.6, 200, 222, new THREE.MeshStandardMaterial({ color: 0x2a2d30, roughness: 0.7 }), g);   // 握把
+    ell(px, by0 - 3, 0.8, 0.8, 90, 200, steel, g);                                 // 杖身
+    ell(px, by0 - 3, 2.2, 2.2, 102, 103, new THREE.MeshStandardMaterial({ color: 0x2a2d30, roughness: 0.7 }), g);   // 雪花盤
+  }
+  const el = document.createElement('div');
+  el.className = 'lbl';
+  el.innerHTML = '洞洞板（木工・孔距 25 mm）<small>登山背包 ×2・登山杖</small>';
+  const o = new CSS2DObject(el);
+  { const [px, pz] = P((PB.x0 + PB.x1) / 2, by0 - 25); o.position.set(px, 2.2, pz); }
+  g.add(o);
+  scene.add(g);
 }
 
 let dyn = new THREE.Group();
 scene.add(dyn);
+// 樑：取自客戶單元圖 PDF／DWG 的樑邊線（0_ARCH 圖層虛線）。整張圖用單一比例換算會有 3～12 cm 偏差，
+// 所以每條樑邊都以「PDF 上最近的那道牆面」為基準量距離，再套到模型的同一道牆面上；與牆面重疊的樑邊就與牆面齊平（內縮 0.3 避免共平面）
+// ext: true 的段落在外牆以外（後陽台、露台上方），整支用外牆磚材質；室內段與室外段的分界都切在牆體中間，切面藏在牆裡
+const BEAMS = [
+  { x0: 260.8, x1: 835.8, y0: 146.0, y1: 175.4, ext: true, name: '後陽台／客廳北側樑（客廳側與電視牆齊平，往後陽台凸出）' },
+  { x0: 228.5, x1: 250.1, y0: 69.8,  y1: 238.2, name: '餐廳西側縱樑（客浴段）' },
+  { x0: 250.1, x1: 260.8, y0: 69.8,  y1: 238.2, ext: true, name: '餐廳西側縱樑（凸出到後陽台的部分）' },
+  { x0: 228.5, x1: 260.8, y0: 238.2, y1: 969.3, name: '餐廳西側縱樑（餐廳、玄關、主浴旁）' },
+  // 玄關北側樑：x 59.6 以西是外牆轉角（玄關北牆外牆面 y 330.7 以北就是室外），這段北緣退到外牆面內 0.3
+  { x0: 12.9,  x1: 59.6,  y0: 331.0, y1: 353.7, name: '玄關北側樑（外牆轉角段）' },
+  { x0: 59.6,  x1: 216.4, y0: 327.2, y1: 353.7, name: '玄關北側樑' },
+  { x0: 260.8, x1: 835.8, y0: 463.7, y1: 498.4, name: '廚房／臥室一北側樑（廚房、臥室一側與牆齊平）' },
+  { x0: 26.9,  x1: 216.4, y0: 495.8, y1: 518.0, name: '玄關南側樑' },
+  // 東側大樑：內緣沿 PDF 虛線（x 835.8），外緣依各段外牆收邊
+  { x0: 835.8, x1: 880.9, y0: 55,    y1: 168.7, ext: true, name: '東側大樑（後陽台段）' },
+  { x0: 835.8, x1: 880.9, y0: 168.7, y1: 491.7, name: '東側大樑（客廳段，外緣到客廳東外牆面）' },
+  { x0: 835.8, x1: 941.4, y0: 491.7, y1: 713.2, name: '東側大樑（臥室一段，與東外牆相連）' },
+  { x0: 835.0, x1: 902.4, y0: 713.2, y1: 881.3, ext: true, name: '東側大樑（主臥窗外露台段，在小弧形天花板下）' },
+];
+const beamMat = {
+  show:  mat.wall,   // 室內段與室內牆面同一個材質：切換「牆面顏色」時樑一起變色
+  ghost: new THREE.MeshStandardMaterial({ color: 0xc07a4a, roughness: 0.9, transparent: true, opacity: 0.35, depthWrite: false }),
+};
+let beamMode = 'show';
+// 樑從 BEAM_BOTTOM 做到 BEAM_TOP；頂面用牆頂同一個材質（mat.cap）。實際畫的頂面低 0.5 cm：與牆頂同高時重疊處會互搶、邊緣出現白色虛線，
+// 低一點讓牆頂蓋住重疊部分，從上面看不出高低差。剖切高度低於樑底時整支不畫
+function buildBeams(cut, group) {
+  if (beamMode === 'off') return;
+  const m = beamMat[beamMode], h0 = BEAM_BOTTOM, h1 = Math.min(BEAM_TOP - 0.5, cut);
+  if (h1 <= h0) return;
+  for (const b of BEAMS) {
+    const ext = b.ext && beamMode === 'show';
+    const mesh = box(b.x0, b.x1, b.y0, b.y1, h0, h1, ext ? mat.wallExt : m, beamMode === 'show' ? mat.cap : m, group);
+    if (!mesh) continue;
+    if (beamMode === 'ghost') mesh.castShadow = false;
+    if (ext) {
+      // 外牆磚依實際尺寸貼：側面沿長度與高度，底面沿平面 x、y
+      tileUV(mesh, [0, 1], b.y0, b.y1, h0, h1);
+      tileUV(mesh, [4, 5], b.x0, b.x1, h0, h1);
+      const uv = mesh.geometry.attributes.uv;
+      for (let i = 12; i < 16; i++) uv.setXY(i, (b.x0 + uv.getX(i) * (b.x1 - b.x0)) / TILE_TEX_W, (b.y0 + uv.getY(i) * (b.y1 - b.y0)) / TILE_TEX_H);
+      uv.needsUpdate = true;
+    }
+  }
+}
+
 function rebuild(cut) {
+  if (walkActive) cut = WALL_TOP;
   scene.remove(dyn);
   dyn.traverse(o => o.geometry && o.geometry.dispose());
   dyn = new THREE.Group();
   WALLS.forEach(w => { const w2 = kitchenWall(partitionWall(w)); if (w2) buildWall(w2, cut, dyn); });
   buildPartitionFrame(cut, dyn);
+  buildCanopy(cut, dyn);
+  buildBeams(cut, dyn);
   PARAPETS.forEach(w => w.rail ? buildRail(w, cut, dyn) : buildWall(w, cut, dyn, { h: 110, side: mat.para, t: 12 }));
   // 內縮 0.6 cm、略低 0.5 cm，避免與外牆面共平面造成 z-fighting 閃爍
-  SHAFTS.forEach(([x0, x1, y0, y1]) => box(x0 + 0.6, x1 - 0.6, y0 + 0.6, y1 - 0.6, -14, Math.min(WALL_H, cut) - 0.5, mat.shaft, mat.cap, dyn));
+  SHAFTS.forEach(([x0, x1, y0, y1, outdoor]) => {
+    // 柱頂與牆頂、弧形天花板齊平（WALL_TOP）；頂面同為 mat.cap，即使與牆頂重疊也同色不會看出閃動
+    const a0 = x0 + 0.6, a1 = x1 - 0.6, b0 = y0 + 0.6, b1 = y1 - 0.6, h1 = Math.min(WALL_TOP, cut);
+    const sm = box(a0, a1, b0, b1, -14, h1, outdoor ? mat.wallExt : mat.shaft, mat.cap, dyn);
+    if (outdoor && sm) { tileUV(sm, [0, 1], b0, b1, -14, h1); tileUV(sm, [4, 5], a0, a1, -14, h1); }   // 室外柱四面貼外牆磚
+  });
   scene.add(dyn);
 }
-rebuild(WALL_H);
+rebuild(WALL_TOP);
 
 // ---------- 標籤 ----------
 const labelEls = new Map();
@@ -1165,8 +1904,56 @@ document.getElementById('tot-in').textContent = `約 ${inside.toFixed(1)} m² ·
 document.getElementById('tot-out').textContent = `約 ${outside.toFixed(1)} m² · ${ping(outside)} 坪`;
 
 let selected = null;
+// 選取空間時在地板上標出長與寬（數字取自尺寸圖淨寬 r.dim，與「顯示文字」開關無關，一律顯示）
+const dimMat = new THREE.MeshBasicMaterial({ color: 0x0e7490 });
+let dimGroup = null;
+function dimSprite(text) {
+  const c = document.createElement('canvas');
+  c.width = 320; c.height = 112;
+  const x = c.getContext('2d');
+  x.fillStyle = '#0e7490';
+  x.beginPath(); x.roundRect(4, 4, 312, 104, 22); x.fill();
+  x.fillStyle = '#ffffff';
+  x.font = '600 60px "IBM Plex Mono", Consolas, monospace';
+  x.textAlign = 'center'; x.textBaseline = 'middle';
+  x.fillText(text, 160, 60);
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: false, transparent: true }));
+  sp.scale.set(0.62, 0.22, 1);
+  sp.renderOrder = 999;
+  return sp;
+}
+function showDims(r) {
+  if (dimGroup) {
+    dimGroup.traverse(o => { o.geometry && o.geometry.dispose(); if (o.isSprite) { o.material.map.dispose(); o.material.dispose(); } });
+    scene.remove(dimGroup);
+    dimGroup = null;
+  }
+  if (!r) return;
+  const [w, l] = r.dim.split('×').map(s => parseFloat(s));
+  const [x0, x1, y0, y1] = r.rect;
+  const g = new THREE.Group(), h = (r.out ? -3 : 0) + 1.5, inset = Math.min(30, (y1 - y0) / 4, (x1 - x0) / 4);
+  const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
+  // 東西向（寬）：沿北側、置中，長度依尺寸圖數字
+  const ya = y0 + inset;
+  box(cx - w / 2, cx + w / 2, ya - 0.8, ya + 0.8, h, h + 1, dimMat, dimMat, g);
+  for (const ex of [cx - w / 2, cx + w / 2]) box(ex - 0.8, ex + 0.8, ya - 8, ya + 8, h, h + 1, dimMat, dimMat, g);
+  // 南北向（長）：沿西側、置中
+  const xa = x0 + inset;
+  box(xa - 0.8, xa + 0.8, cy - l / 2, cy + l / 2, h, h + 1, dimMat, dimMat, g);
+  for (const ey of [cy - l / 2, cy + l / 2]) box(xa - 8, xa + 8, ey - 0.8, ey + 0.8, h, h + 1, dimMat, dimMat, g);
+  g.traverse(o => { if (o.isMesh) { o.castShadow = false; o.receiveShadow = false; } });
+  const sw = dimSprite(`${w} cm`), sl = dimSprite(`${l} cm`);
+  { const [px, pz] = P(cx, ya); sw.position.set(px, M(h + 25), pz); }
+  { const [px, pz] = P(xa, cy); sl.position.set(px, M(h + 25), pz); }
+  g.add(sw, sl);
+  scene.add(g);
+  dimGroup = g;
+}
 function select(id, fly) {
   selected = id;
+  showDims(id ? ROOMS.find(x => x.id === id) : null);
   for (const [rid, mesh] of floorMeshes) {
     const on = rid === id;
     mesh.material[2].emissive.setHex(on ? 0x0e7490 : 0x000000);
@@ -1206,39 +1993,58 @@ function flyTo(pos, tgt) {
 }
 function setView(key, instant) {
   const v = VIEWS[key];
-  for (const k of Object.keys(VIEWS)) document.getElementById('v-' + k).setAttribute('aria-pressed', String(k === key));
+  document.getElementById('sel-view').value = key;
   const p = new THREE.Vector3(...v.pos), t = new THREE.Vector3(...v.tgt);
   if (instant) { camera.position.copy(p); controls.target.copy(t); } else flyTo(p, t);
 }
-for (const k of Object.keys(VIEWS)) document.getElementById('v-' + k).addEventListener('click', () => setView(k));
+document.getElementById('sel-view').addEventListener('change', e => { if (walk.on) exitWalk(); setView(e.target.value); saveSettings(); });
 setView('iso', true);
 
 // ---------- 控制項 ----------
-for (const k of Object.keys(LAYOUTS)) document.getElementById('l-' + k).addEventListener('click', () => buildLayout(k));
-for (const k of ['daily', 'guest']) document.getElementById('d-' + k).addEventListener('click', () => buildDining(k));
+document.getElementById('sel-layout').addEventListener('change', e => buildLayout(e.target.value));
+document.getElementById('sel-dining').addEventListener('change', e => buildDining(e.target.value));
+document.getElementById('sel-dloc').addEventListener('change', e => {
+  diningLoc = e.target.value === 'fridge' ? 'fridge' : 'area';
+  if (diningLoc === 'fridge' && !kitchen.open) setKitchen(true);   // 冰箱旁需要廚房北牆打通
+  buildDining(diningMode);
+});
+// 目前配置摘要：每個區域顯示所選子選項的名稱（說明文字由各區域自己的函式寫入）
+function updateSummary() {
+  const txt = id => { const s = document.getElementById(id); return s.options[s.selectedIndex].text; };
+  const put = (id, v) => { document.getElementById(id).textContent = v; };
+  put('sum-living', txt('sel-living'));
+  put('sum-kitchen', txt('sel-kitchen'));
+  put('sum-dining', txt('sel-dining') + (diningLoc === 'fridge' ? ' · 冰箱旁' : ''));
+  put('sum-master', txt('sel-layout'));
+  const glassName = partition.glassType === 'reeded' ? '長虹玻璃' : '透明玻璃';
+  put('sum-bed1', partition.mode !== 'glass' ? '實牆'
+    : partition.waist >= WALL_H ? '北牆實牆＋西牆玻璃門'
+    : `腰牆 ${partition.waist} cm＋${FRAMES[partition.frame].name}${glassName}`);
+  saveSettings();
+}
 function setKitchen(open) {
   kitchen.open = open;
-  document.getElementById('k-orig').setAttribute('aria-pressed', String(!open));
-  document.getElementById('k-open').setAttribute('aria-pressed', String(open));
+  if (!open && diningLoc === 'fridge') { diningLoc = 'area'; if (diningGroup) buildDining(diningMode); }   // 原始隔間放不下冰箱旁餐桌
+  document.getElementById('sel-kitchen').value = open ? 'open' : 'orig';
+  updateSummary();
   document.getElementById('kitchen-note').textContent = open
     ? '廚房北牆只保留流理台後方約 69 cm 一段遮住流理台，其餘打除，廚房對餐廳開放約 174 cm；東牆保留冰箱與電器櫃背後一段（約 150 cm），只打除冰箱北側約 57 cm，廚房從這裡直接通走道。打牆前請先確認不是結構牆。'
     : '廚房北牆與東牆維持原圖，廚房以開口連通餐廳。';
   rebuild(+cut.value);
 }
-document.getElementById('k-orig').addEventListener('click', () => setKitchen(false));
-document.getElementById('k-open').addEventListener('click', () => setKitchen(true));
+document.getElementById('sel-kitchen').addEventListener('change', e => setKitchen(e.target.value === 'open'));
+document.getElementById('sel-entry').addEventListener('change', e => { entryInterior = e.target.value === 'inside'; buildEntryBack(); });
 buildDining('daily');
 
 const waist = document.getElementById('waist'), waistOut = document.getElementById('waist-out');
 const partNote = document.getElementById('part-note');
 function updatePartitionUI() {
   const glass = partition.mode === 'glass';
-  document.getElementById('p-solid').setAttribute('aria-pressed', String(!glass));
-  document.getElementById('p-glass').setAttribute('aria-pressed', String(glass));
+  document.getElementById('sel-part').value = partition.mode;
   document.getElementById('waist-ctl').hidden = !glass;
   document.getElementById('frame-ctl').hidden = !glass;
-  for (const k of Object.keys(FRAMES)) document.getElementById('f-' + k).setAttribute('aria-pressed', String(k === partition.frame));
-  for (const k of ['clear', 'reeded']) document.getElementById('g-' + k).setAttribute('aria-pressed', String(k === partition.glassType));
+  document.getElementById('sel-frame').value = partition.frame;
+  document.getElementById('sel-glass').value = partition.glassType;
   const F = FRAMES[partition.frame], none = partition.frame === 'none';
   const glassName = partition.glassType === 'reeded' ? '長虹玻璃（直紋半透光，保有採光、遮擋視線）' : '透明玻璃';
   const full = partition.waist >= WALL_H;
@@ -1253,21 +2059,46 @@ function updatePartitionUI() {
       ? `北牆維持實牆（腰牆拉到頂）；${west}`
       : `北牆改為下方 ${partition.waist} cm 腰牆、以上到天花板為${glassName}（${panelsOf(PARTS.b1n)} 片，${F.desc}）；${west}` +
         (tvOnWall ? '腰牆高於電視上緣，電視仍可壁掛。' : '客廳電視無法壁掛，改以原廠雙腳放在電視櫃上。');
+  updateSummary();
 }
 function setPartition(mode) { partition.mode = mode; updatePartitionUI(); rebuild(+cut.value); buildTV(); }
-for (const k of Object.keys(FRAMES)) {
-  document.getElementById('f-' + k).addEventListener('click', () => { partition.frame = k; updatePartitionUI(); rebuild(+cut.value); });
-}
-for (const k of ['clear', 'reeded']) {
-  document.getElementById('g-' + k).addEventListener('click', () => { partition.glassType = k; updatePartitionUI(); rebuild(+cut.value); });
-}
+document.getElementById('sel-frame').addEventListener('change', e => { partition.frame = e.target.value; updatePartitionUI(); rebuild(+cut.value); });
+document.getElementById('sel-glass').addEventListener('change', e => { partition.glassType = e.target.value; updatePartitionUI(); rebuild(+cut.value); });
 buildTV();
-document.getElementById('lv-normal').addEventListener('click', () => { living.swap = false; buildTV(); });
-document.getElementById('lv-swap').addEventListener('click', () => { living.swap = true; buildTV(); });
-document.getElementById('p-solid').addEventListener('click', () => setPartition('solid'));
-document.getElementById('p-glass').addEventListener('click', () => setPartition('glass'));
+document.getElementById('sel-living').addEventListener('change', e => { living.swap = e.target.value === 'swap'; buildTV(); });
+document.getElementById('sel-part').addEventListener('change', e => setPartition(e.target.value));
 waist.addEventListener('input', () => { partition.waist = +waist.value; updatePartitionUI(); rebuild(+cut.value); buildTV(); });
-buildLayout('q5');
+buildLayout('k6');
+// 牆面顏色：只套用室內牆面；外牆朝外的面（mat.wallExt）、女兒牆、管道間、牆頂不變
+const WALL_COLORS = {
+  warm:  { name: '暖白（預設）', hex: 0xf2eee7 },
+  white: { name: '純白',         hex: 0xf8f8f6 },
+  grey:  { name: '淺灰',         hex: 0xdedddb },
+  greige:{ name: '奶茶灰',       hex: 0xd8cdbf },
+  sage:  { name: '鼠尾草綠',     hex: 0xc8d2bf },
+  mist:  { name: '霧藍',         hex: 0xc6d1da },
+  clay:  { name: '陶土粉',       hex: 0xe4cbbd },
+};
+let wallColor = 'warm';
+const selWall = document.getElementById('sel-wall');
+for (const [k, c] of Object.entries(WALL_COLORS)) selWall.add(new Option(c.name, k));
+function setWallColor(k) {
+  wallColor = WALL_COLORS[k] ? k : 'warm';
+  mat.wall.color.setHex(WALL_COLORS[wallColor].hex);
+  selWall.value = wallColor;
+  saveSettings();
+}
+selWall.addEventListener('change', e => setWallColor(e.target.value));
+setWallColor('warm');
+const selBeam = document.getElementById('sel-beam');
+function setBeam(k) {
+  beamMode = ['show', 'ghost', 'off'].includes(k) ? k : 'show';
+  selBeam.value = beamMode;
+  rebuild(+document.getElementById('cut').value || WALL_TOP);
+  saveSettings();
+}
+selBeam.addEventListener('change', e => setBeam(e.target.value));
+
 // 陽光：方位（平面圖上方為北，順時針）與高度角；太陽低時光線較暖、較暗
 const SUN_DIST = 17.2;
 const sunAz = document.getElementById('sun-az'), sunEl = document.getElementById('sun-el');
@@ -1283,12 +2114,16 @@ function setSun() {
   document.getElementById('sun-az-out').textContent = `${sunAz.value}°（${DIRS[Math.round(+sunAz.value / 45) % 8]}）`;
   document.getElementById('sun-el-out').textContent = `${sunEl.value}°`;
 }
-sunAz.addEventListener('input', setSun);
-sunEl.addEventListener('input', setSun);
+sunAz.addEventListener('input', () => { setSun(); saveSettings(); });
+sunEl.addEventListener('input', () => { setSun(); saveSettings(); });
 setSun();
 
 const cut = document.getElementById('cut'), cutOut = document.getElementById('cut-out');
-cut.addEventListener('input', () => { cutOut.textContent = cut.value + ' cm'; rebuild(+cut.value); });
+// 滑桿上限、預設值與標題的高度數字，一律由高度常數帶入
+cut.max = WALL_TOP; cut.value = WALL_TOP; cutOut.textContent = WALL_TOP + ' cm';
+document.getElementById('waist').max = WALL_H;
+document.getElementById('hdr-height').textContent = `淨高 ${WALL_H} cm`;
+cut.addEventListener('input', () => { if (walk.on) exitWalk(); cutOut.textContent = cut.value + ' cm'; rebuild(+cut.value); saveSettings(); });
 // 圖面文字：預設隱藏，按鍵切換
 const labelBtn = document.getElementById('labels');
 function setLabels(on) {
@@ -1299,23 +2134,251 @@ function setLabels(on) {
 labelBtn.addEventListener('click', () => setLabels(labelRenderer.domElement.hidden));
 setLabels(false);
 const spin = document.getElementById('spin');
-spin.addEventListener('change', () => { controls.autoRotate = spin.checked; controls.autoRotateSpeed = 0.8; });
+spin.addEventListener('change', () => { controls.autoRotate = spin.checked; controls.autoRotateSpeed = 0.8; saveSettings(); });
+
+// ---------- 記住設定：存在瀏覽器 localStorage，重新載入時套用；讀寫失敗就照預設值顯示 ----------
+const SETTINGS_KEY = 'a07f02-settings-v3';   // 預設值改變時升版，舊的自動存檔不再套用
+function saveSettings() {
+  if (!settingsReady) return;
+  const s = {
+    living: living.swap ? 'swap' : 'normal',
+    kitchen: kitchen.open,
+    dining: diningMode,
+    dloc: diningLoc,
+    layout: document.getElementById('sel-layout').value,
+    part: { mode: partition.mode, frame: partition.frame, glass: partition.glassType, waist: partition.waist },
+    view: document.getElementById('sel-view').value,
+    cut: +cut.value, sunAz: +sunAz.value, sunEl: +sunEl.value, spin: spin.checked,
+    wall: wallColor,
+    beam: beamMode,
+  };
+  try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(s)); }
+  catch (err) { console.error(MSG_SETTINGS_SAVE_FAIL, err); }
+}
+function loadSettings() {
+  let s = null;
+  try { s = JSON.parse(localStorage.getItem(SETTINGS_KEY) || 'null'); }
+  catch (err) { console.error(MSG_SETTINGS_LOAD_FAIL, err); s = null; }
+  if (s && typeof s === 'object' && !Array.isArray(s)) {
+    // 逐欄位驗證型別與範圍，不合法就用預設值
+    const pick = (v, ok, d) => (typeof v === 'string' && ok.includes(v)) ? v : d;
+    const num = (v, lo, hi, d) => (typeof v === 'number' && Number.isFinite(v)) ? Math.min(hi, Math.max(lo, v)) : d;
+    const p = (s.part && typeof s.part === 'object' && !Array.isArray(s.part)) ? s.part : {};
+    living.swap = pick(s.living, ['swap', 'normal'], 'swap') === 'swap';
+    partition.mode = pick(p.mode, ['solid', 'glass'], 'glass');
+    partition.frame = pick(p.frame, Object.keys(FRAMES), 'none');
+    partition.glassType = pick(p.glass, ['clear', 'reeded'], 'clear');
+    partition.waist = num(p.waist, 40, WALL_H, 90);
+    waist.value = partition.waist;
+    const savedCut = num(s.cut, 30, WALL_TOP, WALL_TOP);
+    cut.value = savedCut >= WALL_H ? WALL_TOP : savedCut;   // 存到天花板以上（含舊版上限）：視為「最高」，用目前的牆頂
+    cutOut.textContent = cut.value + ' cm';
+    sunAz.value = num(s.sunAz, 0, 359, 217);
+    sunEl.value = num(s.sunEl, 10, 80, 55);
+    spin.checked = s.spin === true;
+    controls.autoRotate = spin.checked;
+    controls.autoRotateSpeed = 0.8;
+    setSun();
+    setWallColor(pick(s.wall, Object.keys(WALL_COLORS), 'warm'));
+    beamMode = pick(s.beam, ['show', 'ghost', 'off'], 'show'); selBeam.value = beamMode;
+    setKitchen(typeof s.kitchen === 'boolean' ? s.kitchen : true);
+    updatePartitionUI();
+    rebuild(+cut.value);
+    buildTV();
+    diningLoc = (pick(s.dloc, ['area', 'fridge'], 'area') === 'fridge' && kitchen.open) ? 'fridge' : 'area';
+    buildDining(pick(s.dining, ['daily', 'guest'], 'daily'));
+    buildLayout(pick(s.layout, Object.keys(LAYOUTS), 'k6'));
+    setView(pick(s.view, Object.keys(VIEWS), 'iso'), true);
+  } else {
+    setKitchen(kitchen.open);   // 沒有存檔：依預設值更新廚房說明與摘要
+    updatePartitionUI();        // 臥室一預設為腰牆＋上方玻璃：更新選單、子選項顯示與說明
+  }
+  settingsReady = true;
+  saveSettings();
+}
+document.getElementById('reset-settings').addEventListener('click', () => {
+  try { localStorage.removeItem(SETTINGS_KEY); }
+  catch (err) { console.error(MSG_SETTINGS_SAVE_FAIL, err); }
+  settingsReady = false;
+  location.reload();
+});
+loadSettings();
 
 // 點地板選空間（拖曳不算）
 const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
 let down = null;
 renderer.domElement.addEventListener('pointerdown', e => { down = [e.clientX, e.clientY]; });
 renderer.domElement.addEventListener('pointerup', e => {
+  if (walk.on) return;   // 室內漫遊時由漫遊的點擊處理
   if (!down || Math.hypot(e.clientX - down[0], e.clientY - down[1]) > 5) return;
   const r = renderer.domElement.getBoundingClientRect();
   ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
   ray.setFromCamera(ndc, camera);
-  const hits = ray.intersectObjects([...floorMeshes.values(), ...extraFloors, ...dyn.children], false);
+  const hits = ray.intersectObjects([...floorMeshes.values(), ...extraFloors, ...dyn.children, ...(entryBackGroup ? entryBackGroup.children : [])], false);
+  if (hits[0] && hits[0].object.userData.entryBack) { entryInterior = !entryInterior; buildEntryBack(); return; }   // 點玄關櫃後段：切換外觀／內裝
   const hit = hits.find(h => h.object.userData.room);
   const first = hits[0];
-  if (hit && first === hit) select(hit.object.userData.room, false);
+  if (hit && first === hit) {
+    const id = hit.object.userData.room;
+    select(selected === id ? null : id, false);   // 再按一次同一區域即取消標示
+  }
   else if (!hits.length) select(null, false);
 });
+
+// ---------- 室內漫遊：從大門進入，點畫面走過去、拖曳轉頭；牆、玻璃、家具會擋住，只能從門口通過 ----------
+const EYE_H = 155;          // 眼睛高度（cm）
+const WALK_FOV = 70;        // 漫遊時視角較廣，接近人眼在室內的感覺
+const BODY_R = 0.35;        // 身體半徑（m）：走到障礙物前這個距離就停
+const WALK_SPEED = 1.4;     // 行走速度（m/s）
+const WALK_START = { x: 60, y: 410, yaw: 0 };   // 玄關大門內側，面向東（往餐廳）
+// 天花板：只在漫遊時顯示；每個室內空間（含牆下補片）往牆內延伸 7.6 cm，相鄰空間在牆體中間接起來，不留縫
+const ceilGroup = new THREE.Group();
+{
+  // 天花板只受半球光的地面色照到，會偏暗灰；加一點自發光，接近實際白色天花板的亮度
+  const cm = new THREE.MeshStandardMaterial({ color: 0xf4f2ed, roughness: 0.95, emissive: 0x5c5a55 });
+  const E = 7.6;
+  const rects = [...ROOMS.filter(r => !r.out).flatMap(r => [r.rect, ...(r.extra || [])]), ...FLOOR_PATCHES.map(p => p.rect)];
+  for (const [x0, x1, y0, y1] of rects) {
+    const c = box(x0 - E, x1 + E, y0 - E, y1 + E, WALL_H, WALL_H + 1, cm, cm, ceilGroup);
+    c.castShadow = false;
+    c.userData.ceiling = true;
+  }
+  ceilGroup.visible = false;
+  scene.add(ceilGroup);
+}
+const walk = { on: false, pos: new THREE.Vector3(), yaw: 0, pitch: 0, move: null, saved: null, drag: null };
+const walkBtn = document.getElementById('walk'), hintEl = document.getElementById('hint');
+const hintDefault = hintEl.textContent;
+const walkRay = new THREE.Raycaster();
+walkRay.camera = camera;
+function visibleChain(o) { for (let p = o; p; p = p.parent) if (!p.visible) return false; return true; }
+function walkHits(origin, dir, far, pred) {
+  walkRay.set(origin, dir); walkRay.far = far;
+  return walkRay.intersectObjects(scene.children, true).filter(h => h.object.isMesh && !h.object.isSprite && visibleChain(h.object) && pred(h.object));
+}
+const isBlocker = o => !o.userData.floor && !o.userData.ceiling;
+// 從目前位置往 dir 走 dist（m），在腳邊與腰部高度檢查障礙物，回傳實際可走的距離
+function freeDistance(dir, dist) {
+  let free = dist;
+  for (const hc of [40, 120]) {
+    const o = new THREE.Vector3(walk.pos.x, M(hc), walk.pos.z);
+    const hit = walkHits(o, dir, dist + BODY_R, isBlocker)[0];
+    if (hit) free = Math.min(free, hit.distance - BODY_R);
+  }
+  // 終點底下要有地板，否則往回縮（避免走到屋外）
+  const down = new THREE.Vector3(0, -1, 0);
+  while (free > 0.05) {
+    const p = walk.pos.clone().addScaledVector(dir, free); p.y = M(EYE_H);
+    if (walkHits(p, down, 3, o => o.userData.floor).length) break;
+    free -= 0.1;
+  }
+  return Math.max(0, free);
+}
+let hintTimer = 0;
+function flashHint(text) {
+  hintEl.textContent = text;
+  clearTimeout(hintTimer);
+  hintTimer = setTimeout(() => { if (walk.on) hintEl.textContent = MSG_WALK_HINT; }, 1600);
+}
+function walkTo(dx, dz) {
+  const dist = Math.hypot(dx, dz);
+  if (dist < 0.05) return;
+  const dir = new THREE.Vector3(dx / dist, 0, dz / dist);
+  const go = freeDistance(dir, dist);
+  if (go < 0.08) { flashHint(MSG_WALK_BLOCKED); return; }
+  const to = walk.pos.clone().addScaledVector(dir, go);
+  walk.move = { t0: performance.now(), from: walk.pos.clone(), to, dur: reduceMotion ? 1 : Math.max(250, go / WALK_SPEED * 1000) };
+}
+function walkStep(meters) {
+  walkTo(Math.cos(walk.yaw) * meters, Math.sin(walk.yaw) * meters);
+}
+function walkCamera() {
+  camera.position.set(walk.pos.x, M(EYE_H), walk.pos.z);
+  const cp = Math.cos(walk.pitch);
+  camera.lookAt(walk.pos.x + Math.cos(walk.yaw) * cp, M(EYE_H) + Math.sin(walk.pitch), walk.pos.z + Math.sin(walk.yaw) * cp);
+}
+function enterWalk() {
+  if (walk.on) return;
+  walk.saved = { pos: camera.position.clone(), tgt: controls.target.clone(), fov: camera.fov };
+  walk.on = true; walkActive = true;
+  anim = null;
+  controls.enabled = false;
+  controls.autoRotate = false;
+  const [px, pz] = P(WALK_START.x, WALK_START.y);
+  walk.pos.set(px, 0, pz); walk.yaw = WALK_START.yaw; walk.pitch = 0; walk.move = null;
+  camera.fov = WALK_FOV; camera.updateProjectionMatrix();
+  rebuild(WALL_TOP);            // 漫遊時牆一律完整高度（rebuild 內也會依 walkActive 強制）
+  ceilGroup.visible = true;
+  walkBtn.textContent = '離開室內'; walkBtn.setAttribute('aria-pressed', 'true');
+  hintEl.textContent = MSG_WALK_HINT;
+  walkCamera();
+}
+function exitWalk() {
+  if (!walk.on) return;
+  walk.on = false; walkActive = false; walk.move = null; walk.drag = null;
+  ceilGroup.visible = false;
+  camera.fov = walk.saved.fov; camera.updateProjectionMatrix();
+  camera.position.copy(walk.saved.pos); controls.target.copy(walk.saved.tgt);
+  controls.enabled = true;
+  controls.autoRotate = spin.checked;
+  rebuild(+cut.value);
+  walkBtn.textContent = '進入室內'; walkBtn.setAttribute('aria-pressed', 'false');
+  clearTimeout(hintTimer);
+  hintEl.textContent = hintDefault;
+}
+walkBtn.addEventListener('click', () => walk.on ? exitWalk() : enterWalk());
+// 拖曳轉頭（抓住畫面的方向：往右拖＝往左看），點一下＝走到點到的位置
+const cv = renderer.domElement;
+cv.addEventListener('pointerdown', e => {
+  if (!walk.on) return;
+  walk.drag = { id: e.pointerId, x: e.clientX, y: e.clientY, sx: e.clientX, sy: e.clientY };
+  cv.setPointerCapture(e.pointerId);
+});
+cv.addEventListener('pointermove', e => {
+  const d = walk.drag;
+  if (!walk.on || !d || d.id !== e.pointerId) return;
+  walk.yaw -= (e.clientX - d.x) * 0.005;
+  walk.pitch = Math.max(-1.2, Math.min(1.2, walk.pitch + (e.clientY - d.y) * 0.005));
+  d.x = e.clientX; d.y = e.clientY;
+});
+cv.addEventListener('pointerup', e => {
+  const d = walk.drag;
+  if (!walk.on || !d || d.id !== e.pointerId) return;
+  walk.drag = null;
+  if (Math.hypot(e.clientX - d.sx, e.clientY - d.sy) > 6) return;   // 拖曳過就不算點擊
+  const r = cv.getBoundingClientRect();
+  ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+  ray.setFromCamera(ndc, camera);
+  const hit = ray.intersectObjects(scene.children, true).find(h => h.object.isMesh && !h.object.isSprite && visibleChain(h.object) && !h.object.userData.ceiling);
+  if (hit) walkTo(hit.point.x - walk.pos.x, hit.point.z - walk.pos.z);
+  else walkStep(1.5);           // 點到天空：往前走 1.5 m
+});
+cv.addEventListener('pointercancel', () => { walk.drag = null; });
+cv.addEventListener('wheel', e => {
+  if (!walk.on) return;
+  e.preventDefault();
+  walkStep(e.deltaY < 0 ? 0.4 : -0.4);
+}, { passive: false });
+window.addEventListener('keydown', e => {
+  if (!walk.on || /^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName)) return;
+  const k = e.key.toLowerCase();
+  if (k === 'escape') exitWalk();
+  else if (k === 'arrowup' || k === 'w') walkStep(0.5);
+  else if (k === 'arrowdown' || k === 's') walkStep(-0.5);
+  else if (k === 'arrowleft' || k === 'a') walk.yaw -= Math.PI / 12;
+  else if (k === 'arrowright' || k === 'd') walk.yaw += Math.PI / 12;
+  else return;
+  e.preventDefault();
+});
+function walkUpdate(now) {
+  const m = walk.move;
+  if (m) {
+    const k = Math.min(1, (now - m.t0) / m.dur);
+    walk.pos.lerpVectors(m.from, m.to, k < 1 ? 0.5 - Math.cos(k * Math.PI) / 2 : 1);
+    if (k === 1) walk.move = null;
+  }
+  walkCamera();
+}
 
 // ---------- 主題 ----------
 function applyTheme() {
@@ -1340,13 +2403,16 @@ resize();
 
 const ease = t => 1 - Math.pow(1 - t, 3);
 renderer.setAnimationLoop(now => {
-  if (anim) {
-    const k = Math.min(1, (now - anim.t0) / 750), e = ease(k);
-    camera.position.lerpVectors(anim.p0, anim.p1, e);
-    controls.target.lerpVectors(anim.q0, anim.q1, e);
-    if (k === 1) anim = null;
+  if (walk.on) walkUpdate(now);
+  else {
+    if (anim) {
+      const k = Math.min(1, (now - anim.t0) / 750), e = ease(k);
+      camera.position.lerpVectors(anim.p0, anim.p1, e);
+      controls.target.lerpVectors(anim.q0, anim.q1, e);
+      if (k === 1) anim = null;
+    }
+    controls.update();
   }
-  controls.update();
   renderer.render(scene, camera);
   labelRenderer.render(scene, camera);
 });
