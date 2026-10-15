@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.3.0 - 2026-10-15
+
+### 新增
+- 家具改用 IKEA 官網的 3D 模型（`A07F02_ikea_models.js`）：STOCKHOLM 沙發、BESTÅ 電視櫃、MILSBO 玻璃門櫃、STOCKHOLM 2025 咖啡桌、NORDEN 餐桌（平日模式）、IKEA PS 2026 餐椅、SLATTUM 床（150 用深灰款改成 Knisa 亮藍）
+- 「全屋顯示」新增「家具外觀」切換：IKEA 3D 模型／簡易方塊；讀不到模型檔時自動用方塊
+- HATTÅSEN 床頭櫃、PAX/FARDAL 衣櫃沒有合適的 3D 模型，維持方塊；NORDEN 宴客 152 cm 沒有對應模型，維持方塊
+
 ## 1.2.0 - 2026-10-15
 
 ### 變更

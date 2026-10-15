@@ -1,7 +1,7 @@
 ---
 title: A07F02 3D 模型架構
 date: 2026-10-15
-version: 1.2.0
+version: 1.3.0
 ---
 
 # 系統架構
@@ -27,6 +27,8 @@ flowchart LR
   W --> F
   W --> DR[門片與拉門自動開關]
   DR --> F
+  M0[A07F02_ikea_models.js IKEA glb] --> L0[GLTFLoader 與 DRACOLoader]
+  L0 --> D
   I[jsDelivr three 0.160.0] --> A
   J[GitHub Pages] --> A
 ```
@@ -72,4 +74,5 @@ flowchart TD
 | LAYOUTS / DINING / TV / SOFA / COFFEE / VITRINE | 家具配置與 IKEA 尺寸 |
 | CARPCAB / ENTRY_CAB / PEGBOARD | 木作吊櫃、玄關櫃、洞洞板 |
 | DOORS / SLIDERS | 平開門片（鉸鏈、開啟方向）與橫拉門片，室內漫遊時自動開關 |
+| IKEA_MODELS / placeModel | IKEA 3D 模型（base64 glb）與擺放函式：依牆面對齊、朝向、必要時縮放；讀不到時改畫方塊 |
 | SETTINGS_KEY | localStorage 設定存檔的鍵（逐欄位驗證後套用） |

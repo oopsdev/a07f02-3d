@@ -301,6 +301,13 @@ input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px;
               <option value="off">隱藏</option>
             </select>
           </div>
+          <div class="field" id="furn-field" hidden>
+            <label for="sel-furn">家具外觀</label>
+            <select id="sel-furn">
+              <option value="model">IKEA 3D 模型</option>
+              <option value="box">簡易方塊</option>
+            </select>
+          </div>
           <div class="row">
             <label for="cut">剖切高度</label>
             <output id="cut-out" for="cut"></output>
@@ -363,6 +370,8 @@ input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px;
   </aside>
 </div>
 
+<!-- IKEA 官網 3D 模型（只放本機，不上傳 GitHub）：檔案不存在時家具維持方塊 -->
+<script src="A07F02_ikea_models.js"></script>
 <script type="importmap">
 { "imports": {
   "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
@@ -373,12 +382,15 @@ input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px;
 <script type="module">
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
 const MSG_SETTINGS_SAVE_FAIL = '無法儲存設定（瀏覽器可能封鎖本機儲存），重新載入後會回到預設值。';
 const MSG_SETTINGS_LOAD_FAIL = '無法讀取已儲存的設定，改用預設值。';
 const MSG_WALK_HINT = '點一下往那個方向走一步 · 拖曳轉頭 · 方向鍵／WASD 移動 · Esc 離開';
+const MSG_MODEL_FAIL = 'IKEA 3D 模型載入失敗，這件家具改用方塊：';
 const MSG_WALK_BLOCKED = '前方被擋住了，換個方向試試';
 const MSG_WEBGL_FAIL = '這個瀏覽器無法啟動 3D 繪圖（WebGL）。請改用最新版 Chrome、Edge 或 Safari 開啟。';
 // 設定載入完成前不寫入 localStorage（初始化時各區域會先用預設值建一次，不能蓋掉已儲存的設定）
@@ -893,6 +905,88 @@ function buildCanopy(cut, group) {
   group.add(soffit);
 }
 
+// ---------- IKEA 3D 模型（只在本機版）----------
+// 同資料夾的 A07F02_ikea_models.js 以 window.IKEA_MODELS 提供 IKEA 官網商品頁公開的 glb（base64）。這個檔不放到 GitHub 公開版：
+// 讀不到時（公開版、或檔案不在）家具維持方塊；模型解析完成前先畫方塊，完成後重畫一次
+const IKEA_SRC = window.IKEA_MODELS || null;
+const ikea = {};                 // key → { obj: 範本, size: [x, y, z]（cm） }
+let furnStyle = 'model';         // model = IKEA 3D 模型、box = 簡易方塊
+const useModel = k => furnStyle === 'model' && !!ikea[k];
+const ikeaSize = k => ikea[k] ? ikea[k].size : null;
+const ROT = { S: 0, N: Math.PI, E: Math.PI / 2, W: -Math.PI / 2 };   // IKEA 模型正面朝 +Z（平面南方）；轉成朝向平面上的哪一方
+// 放模型（平面座標 cm）：rot 旋轉；fit = [寬, 深] 時平面兩軸縮放到剛好（高度不變）；
+// x／y 給數字＝外框中心；給 [值, +1]＝外框最小邊對齊該值（往 + 方向延伸）、[值, -1]＝最大邊對齊
+function placeModel(key, grp, { x, y, rot = 0, fit = null, floor = 0 }) {
+  const t = ikea[key];
+  if (!t) return null;
+  const inner = t.obj.clone(true);
+  inner.rotation.y = rot;
+  const holder = new THREE.Group();
+  holder.add(inner);
+  const bb = new THREE.Box3();
+  holder.updateMatrixWorld(true); bb.setFromObject(holder);
+  if (fit) holder.scale.set(M(fit[0]) / (bb.max.x - bb.min.x), 1, M(fit[1]) / (bb.max.z - bb.min.z));
+  holder.updateMatrixWorld(true); bb.setFromObject(holder);
+  const at = (v, lo, hi, toW) => Array.isArray(v) ? toW(v[0]) - (v[1] > 0 ? lo : hi) : toW(v) - (lo + hi) / 2;
+  holder.position.set(at(x, bb.min.x, bb.max.x, a => M(a - CX)), M(floor) - bb.min.y, at(y, bb.min.z, bb.max.z, b => M(b - CZ)));
+  holder.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+  grp.add(holder);
+  return holder;
+}
+// 換布料顏色（SLATTUM 150 的替代模型是深灰，改成 Knisa 亮藍）：保留貼圖明暗，色相換成指定顏色
+function retint(obj, hex) {
+  const tgt = [(hex >> 16) & 255, (hex >> 8) & 255, hex & 255];
+  obj.traverse(o => {
+    if (!o.isMesh) return;
+    for (const m of [].concat(o.material)) {
+      const img = m.map && m.map.image;
+      if (!img || !img.width) { m.color.setHex(hex); continue; }
+      const c = document.createElement('canvas');
+      c.width = img.width; c.height = img.height;
+      const cx = c.getContext('2d');
+      cx.drawImage(img, 0, 0);
+      const d = cx.getImageData(0, 0, c.width, c.height), p = d.data;
+      let sum = 0;
+      for (let i = 0; i < p.length; i += 4) sum += p[i] * 0.3 + p[i + 1] * 0.59 + p[i + 2] * 0.11;
+      const avg = sum / (p.length / 4) || 1;
+      for (let i = 0; i < p.length; i += 4) {
+        const k = Math.min(1.6, Math.max(0.45, (p[i] * 0.3 + p[i + 1] * 0.59 + p[i + 2] * 0.11) / avg));
+        p[i] = Math.min(255, tgt[0] * k); p[i + 1] = Math.min(255, tgt[1] * k); p[i + 2] = Math.min(255, tgt[2] * k);
+      }
+      cx.putImageData(d, 0, 0);
+      const tex = new THREE.CanvasTexture(c);
+      tex.flipY = m.map.flipY; tex.colorSpace = m.map.colorSpace;
+      tex.wrapS = m.map.wrapS; tex.wrapT = m.map.wrapT;
+      m.map = tex; m.needsUpdate = true;
+    }
+  });
+}
+function redrawFurniture() {
+  buildTV();
+  buildDining(diningMode);
+  buildLayout(document.getElementById('sel-layout').value);
+}
+if (IKEA_SRC && typeof IKEA_SRC === 'object' && Object.keys(IKEA_SRC).length) {
+  document.getElementById('furn-field').hidden = false;
+  try {
+    const draco = new DRACOLoader().setDecoderPath('https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/libs/draco/gltf/');
+    const loader = new GLTFLoader().setDRACOLoader(draco);
+    const jobs = Object.entries(IKEA_SRC).map(([k, b64]) => new Promise(done => {
+      try {
+        const bin = Uint8Array.from(atob(b64), ch => ch.charCodeAt(0)).buffer;
+        loader.parse(bin, '', gltf => {
+          const obj = gltf.scene;
+          if (k === 'slattum150') retint(obj, LAYOUTS.q5.frame);
+          const sz = new THREE.Box3().setFromObject(obj).getSize(new THREE.Vector3());
+          ikea[k] = { obj, size: [sz.x * 100, sz.y * 100, sz.z * 100] };
+          done();
+        }, err => { console.error(MSG_MODEL_FAIL, k, err); done(); });
+      } catch (err) { console.error(MSG_MODEL_FAIL, k, err); done(); }
+    }));
+    Promise.all(jobs).then(() => { if (Object.keys(ikea).length) redrawFurniture(); });
+  } catch (err) { console.error(MSG_MODEL_FAIL, err); }
+}
+
 // 主臥：南牆插座（依 PDF 換算，距離從主臥西牆面 MB_W 起算）與 5 尺雙人床
 const MB_W = hi('mbW'), MB_S = lo('south');     // 主臥西牆內面 x、南牆內面 y
 const SOUTH_OUTLETS = [
@@ -966,9 +1060,13 @@ function buildLayout(key) {
   const fab = new THREE.MeshStandardMaterial({ color: L.frame, roughness: 0.95 });
   const duv = new THREE.MeshStandardMaterial({ color: L.duvet, roughness: 0.95 });
   const side = (w - L.mat[0]) / 2;
-  box(x0, x1, y0, y1, 0, 30, fab, fab, g);                                      // 軟墊床框
-  box(x0, x1, y0, y0 + side, 30, 40, fab, fab, g);                              // 床尾板 40
-  box(x0, x1, y1 - 6, y1, 0, 85, fab, fab, g);                                  // 床頭板 85
+  const bedModel = key === 'q5' ? 'slattum150' : 'slattum180';
+  if (useModel(bedModel)) placeModel(bedModel, g, { x: cx, y: (y0 + y1) / 2, rot: ROT.N, fit: [w, l] });   // 床頭靠南牆、床尾朝北
+  else {
+    box(x0, x1, y0, y1, 0, 30, fab, fab, g);                                    // 軟墊床框
+    box(x0, x1, y0, y0 + side, 30, 40, fab, fab, g);                            // 床尾板 40
+    box(x0, x1, y1 - 6, y1, 0, 85, fab, fab, g);                                // 床頭板 85
+  }
   box(x0 + side, x1 - side, y1 - 6 - L.mat[1], y1 - 6, 30, 52, furnMat.linen, furnMat.linen, g); // 床墊
   box(x0 + side + 3, x1 - side - 3, y0 + side + 2, y0 + side + 135, 52, 56, duv, duv, g);        // 被子
   box(x0 + side + 10, cx - 5, y1 - 52, y1 - 14, 52, 62, furnMat.linen, furnMat.linen, g);       // 枕頭
@@ -1183,6 +1281,9 @@ function buildTV() {
   };
   const P = (x, y) => Praw(x, yy(y));
   const gapLabel = (text, x, y, grp) => gapLabelRaw(text, x, yy(y), grp);
+  // 放 IKEA 模型（未鏡射座標）：互換時 y 與南北朝向一起鏡射
+  const flipNS = { N: 'S', S: 'N', E: 'E', W: 'W' };
+  const put = (key, x, y, face, opts = {}) => placeModel(key, g, { x, y: Array.isArray(y) ? [yy(y[0]), swap ? -y[1] : y[1]] : yy(y), rot: ROT[swap ? flipNS[face] : face], ...opts });
   // 腰牆高於電視上緣 10 cm 以上時仍可壁掛；互換後電視在外牆，一律壁掛
   const glass = !swap && partition.mode === 'glass' && partition.waist < TV.center + TV.h / 2 + 10;
   const x0 = TV.cx - TV.w / 2, x1 = TV.cx + TV.w / 2;
@@ -1194,14 +1295,20 @@ function buildTV() {
   {
     // BESTÅ 電視櫃：壁掛或座放都放在電視下方、靠牆
     const B = BENCH, bf = TV.wallFace - B.d;
-    box(TV.cx - B.w / 2, TV.cx + B.w / 2, bf + 1.6, TV.wallFace, 0, B.h, tvMat.cab, tvMat.cab, g);     // BESTÅ 櫃體
-    box(TV.cx - B.w / 2 + 0.5, TV.cx + B.w / 2 - 0.5, bf, bf + 1.6, 1, B.h - 1, tvMat.walnut, tvMat.walnut, g); // Lappviken 門板
+    if (useModel('besta')) put('besta', TV.cx, [TV.wallFace - 0.3, -1], 'N');   // 背板貼牆、正面朝客廳
+    else {
+      box(TV.cx - B.w / 2, TV.cx + B.w / 2, bf + 1.6, TV.wallFace, 0, B.h, tvMat.cab, tvMat.cab, g);     // BESTÅ 櫃體
+      box(TV.cx - B.w / 2 + 0.5, TV.cx + B.w / 2 - 0.5, bf, bf + 1.6, 1, B.h - 1, tvMat.walnut, tvMat.walnut, g); // Lappviken 門板
+    }
   }
   {
     // MILSBO 展示櫃：面對電視的左邊。電視在隔間牆（人面向南）→ 左邊是東；電視在結構牆（人面向北）→ 左邊是西
     const V = VITRINE, B = BENCH;
     const vx0 = swap ? TV.cx - B.w / 2 - V.gap - V.w : TV.cx + B.w / 2 + V.gap, vx1 = vx0 + V.w;
     const vf = TV.wallFace - V.d, vb = TV.wallFace, wm = tvMat.vitrine, gl = mat.clear;
+    const vModel = useModel('milsbo');
+    if (vModel) put('milsbo', swap ? [TV.cx - B.w / 2 - V.gap, -1] : [TV.cx + B.w / 2 + V.gap, 1], [TV.wallFace - 0.3, -1], 'N');   // 緊貼電視櫃、背板貼牆
+    else {
     for (const px of [vx0, vx1 - 2.5]) for (const py of [vf, vb - 2.5]) box(px, px + 2.5, py, py + 2.5, 0, V.h, wm, wm, g);   // 四角鋁框立柱
     box(vx0, vx1, vf, vb, 8, 10, wm, wm, g);                         // 底板（離地 8 cm）
     box(vx0, vx1, vf, vb, V.h - 2, V.h, wm, wm, g);                  // 頂板
@@ -1211,9 +1318,11 @@ function buildTV() {
     box(vx1 - 0.6, vx1, vf + 2.5, vb - 2.5, 10, V.h - 2, gl, gl, g);
     for (const sh of [50, 90, 130]) box(vx0 + 2.5, vx1 - 2.5, vf + 1, vb - 1, sh, sh + 0.8, gl, gl, g);   // 3 片玻璃層板
     box(vx1 - 6, vx1 - 4.5, vf - 1.5, vf, 80, 110, wm, wm, g);       // 門把
+    }
+    const vs = vModel ? ikeaSize('milsbo').map(Math.round) : null;
     const vl = document.createElement('div');
     vl.className = 'lbl';
-    vl.innerHTML = `IKEA MILSBO 玻璃門櫃<small>白 · ${V.w} × ${V.d} × ${V.h}</small>`;
+    vl.innerHTML = `IKEA MILSBO 玻璃門櫃<small>白 · ${vs ? `${vs[0]} × ${vs[2]} × ${vs[1]}（3D 模型）` : `${V.w} × ${V.d} × ${V.h}`}</small>`;
     const vo = new CSS2DObject(vl);
     { const [px, pz] = P((vx0 + vx1) / 2, (vf + vb) / 2); vo.position.set(px, M(V.h + 20), pz); }
     g.add(vo);
@@ -1262,26 +1371,33 @@ function buildTV() {
   scr.castShadow = false;
 
   // 沙發（預設靠客廳北牆；互換後靠臥室一牆）
-  const s = SOFA;
-  for (const [lx, ly] of [[s.x0 + 8, s.y0 + 6], [s.x1 - 12, s.y0 + 6], [s.x0 + 8, s.y1 - 10], [s.x1 - 12, s.y1 - 10]]) {
-    box(lx, lx + 4, ly, ly + 4, 0, s.leg, tvMat.leg, tvMat.leg, g);                  // 鋁腳 14 cm
+  const s = SOFA, sofaModel = useModel('sofa');
+  const sofaFront = sofaModel ? s.y0 + 0.3 + ikeaSize('sofa')[2] : s.y1;               // 沙發正面（3D 模型以實際深度計）
+  if (sofaModel) put('sofa', TV.cx, [s.y0 + 0.3, 1], 'S');                              // 靠背貼牆、正面朝電視
+  else {
+    for (const [lx, ly] of [[s.x0 + 8, s.y0 + 6], [s.x1 - 12, s.y0 + 6], [s.x0 + 8, s.y1 - 10], [s.x1 - 12, s.y1 - 10]]) {
+      box(lx, lx + 4, ly, ly + 4, 0, s.leg, tvMat.leg, tvMat.leg, g);                // 鋁腳 14 cm
+    }
+    box(s.x0 + s.armW, s.x1 - s.armW, s.y0, s.y1, s.leg, s.seat, tvMat.sofa, tvMat.sofaTop, g);   // 座墊（座寬 158）
+    box(s.x0 + s.armW, s.x1 - s.armW, s.y0, s.y0 + s.backD, s.seat, s.back, tvMat.sofa, tvMat.sofaTop, g); // 靠背
+    box(s.x0, s.x0 + s.armW, s.y0, s.y1, s.leg, s.arm, tvMat.sofa, tvMat.sofaTop, g);   // 寬扶手 72 高
+    box(s.x1 - s.armW, s.x1, s.y0, s.y1, s.leg, s.arm, tvMat.sofa, tvMat.sofaTop, g);
   }
-  box(s.x0 + s.armW, s.x1 - s.armW, s.y0, s.y1, s.leg, s.seat, tvMat.sofa, tvMat.sofaTop, g);   // 座墊（座寬 158）
-  box(s.x0 + s.armW, s.x1 - s.armW, s.y0, s.y0 + s.backD, s.seat, s.back, tvMat.sofa, tvMat.sofaTop, g); // 靠背
-  box(s.x0, s.x0 + s.armW, s.y0, s.y1, s.leg, s.arm, tvMat.sofa, tvMat.sofaTop, g);   // 寬扶手 72 高
-  box(s.x1 - s.armW, s.x1, s.y0, s.y1, s.leg, s.arm, tvMat.sofa, tvMat.sofaTop, g);
 
   // 客廳矮桌：IKEA STOCKHOLM 2025 圓形咖啡桌（深棕色橡木）直徑 90 × 高 38；離沙發 COFFEE.gap
   {
-    const C = COFFEE, r = C.dia / 2, cy0 = s.y1 + C.gap, cy1 = cy0 + C.dia, cy = (cy0 + cy1) / 2;
-    ell(TV.cx, yy(cy), r, r, C.h - 3, C.h, tvMat.walnutTop, g);                           // 圓形桌面
-    for (const ang of [45, 135, 225, 315]) {                                              // 實心橡木桌腳
-      const lx = TV.cx + Math.cos(ang * Math.PI / 180) * (r - 12);
-      const ly = cy + Math.sin(ang * Math.PI / 180) * (r - 12);
-      ell(lx, yy(ly), 2.5, 2.5, 0, C.h - 3, tvMat.walnutTop, g);
+    const C = COFFEE, r = C.dia / 2, cy0 = sofaFront + C.gap, cy1 = cy0 + C.dia, cy = (cy0 + cy1) / 2;
+    if (useModel('coffee')) put('coffee', TV.cx, cy, 'S');
+    else {
+      ell(TV.cx, yy(cy), r, r, C.h - 3, C.h, tvMat.walnutTop, g);                         // 圓形桌面
+      for (const ang of [45, 135, 225, 315]) {                                            // 實心橡木桌腳
+        const lx = TV.cx + Math.cos(ang * Math.PI / 180) * (r - 12);
+        const ly = cy + Math.sin(ang * Math.PI / 180) * (r - 12);
+        ell(lx, yy(ly), 2.5, 2.5, 0, C.h - 3, tvMat.walnutTop, g);
+      }
     }
-    const benchFront = TV.wallFace - BENCH.d;
-    gapLabel(`${C.gap} cm`, TV.cx - r - 15, (s.y1 + cy0) / 2, g);
+    const benchFront = TV.wallFace - (useModel('besta') ? ikeaSize('besta')[2] + 0.3 : BENCH.d);
+    gapLabel(`${C.gap} cm`, TV.cx - r - 15, (sofaFront + cy0) / 2, g);
     gapLabel(`走道 ${Math.round(benchFront - cy1)} cm`, TV.cx - r - 15, (cy1 + benchFront) / 2, g);
     const cl = document.createElement('div');
     cl.className = 'lbl';
@@ -1345,7 +1461,8 @@ function buildDining(mode) {
   diningMode = mode;
   const g = new THREE.Group(), D = DINING, birch = diningMat.birch, fab = diningMat.green, leg = diningMat.greenLeg;
   const guest = mode === 'guest';
-  const atFridge = diningLoc === 'fridge';                         // 冰箱旁：平日與宴客都從冰箱北側往北延伸
+  const atFridge = diningLoc === 'fridge';
+  const tableModel = !guest && useModel('norden');                 // 模型是一片桌板放下的狀態（89 cm），宴客 152 cm 用方塊                         // 冰箱旁：平日與宴客都從冰箱北側往北延伸
   const cx = atFridge ? FRIDGE_X1 - D.w / 2 : D.cx;                 // 冰箱旁：桌身與冰箱東緣對齊
   const tx0 = cx - D.w / 2, tx1 = cx + D.w / 2;
   // 沿 y 方向的桌段 [y0, y1]
@@ -1360,20 +1477,26 @@ function buildDining(mode) {
     bodyY0 = ty0 + D.leaf;
   } else if (atFridge) {
     ty1 = FRIDGE_N - 2.5; bodyY0 = ty1 - D.body; ty0 = bodyY0 - D.leaf;   // 放下的桌板垂在冰箱與桌身之間，掀起的桌板朝北
-    box(tx0 + 1, tx1 - 1, FRIDGE_N - 2.3, FRIDGE_N - 0.3, 10, D.h - 3, birch, birch, g);
+    if (!tableModel) box(tx0 + 1, tx1 - 1, FRIDGE_N - 2.3, FRIDGE_N - 0.3, 10, D.h - 3, birch, birch, g);
   } else {
     bodyY0 = D.wall + 2.5;                                          // 放下的桌板垂在牆與桌身之間
     ty0 = bodyY0; ty1 = bodyY0 + D.body + D.leaf;
-    box(tx0 + 1, tx1 - 1, D.wall + 0.3, D.wall + 2.3, 10, D.h - 3, birch, birch, g);  // 垂下的桌板
+    if (!tableModel) box(tx0 + 1, tx1 - 1, D.wall + 0.3, D.wall + 2.3, 10, D.h - 3, birch, birch, g);  // 垂下的桌板
   }
-  box(tx0 + 4, tx1 - 4, bodyY0, bodyY0 + D.body, 2, D.h - 3, birch, birch, g);        // 抽屜桌身
-  box(tx0, tx1, ty0, ty1, D.h - 3, D.h, birch, birch, g);                              // 桌面
-  // 撐腳（gate leg）：掀起的桌板末端各兩支
-  const legsAt = guest ? [ty0 + 4, ty1 - 8] : atFridge ? [ty0 + 4] : [ty1 - 8];   // 宴客兩端都有撐腳
-  for (const ly of legsAt) for (const lx of [tx0 + 6, tx1 - 10]) box(lx, lx + 4, ly, ly + 4, 0, D.h - 3, birch, birch, g);
+  if (tableModel) {
+    // NORDEN 模型：放下的桌板在模型 -X 端；冰箱旁朝南（冰箱側）、靠牆時朝北（牆側）
+    placeModel('norden', g, { x: cx, y: atFridge ? [FRIDGE_N - 0.3, -1] : [D.wall + 0.3, 1], rot: atFridge ? Math.PI / 2 : -Math.PI / 2 });
+  } else {
+    box(tx0 + 4, tx1 - 4, bodyY0, bodyY0 + D.body, 2, D.h - 3, birch, birch, g);      // 抽屜桌身
+    box(tx0, tx1, ty0, ty1, D.h - 3, D.h, birch, birch, g);                            // 桌面
+    // 撐腳（gate leg）：掀起的桌板末端各兩支
+    const legsAt = guest ? [ty0 + 4, ty1 - 8] : atFridge ? [ty0 + 4] : [ty1 - 8];   // 宴客兩端都有撐腳
+    for (const ly of legsAt) for (const lx of [tx0 + 6, tx1 - 10]) box(lx, lx + 4, ly, ly + 4, 0, D.h - 3, birch, birch, g);
+  }
 
   // 椅子：dir = +1 面向東（椅背在西）、-1 面向西
   const chair = (cx, cy, dir) => {
+    if (useModel('ps2026')) { placeModel('ps2026', g, { x: cx, y: cy, rot: dir > 0 ? ROT.E : ROT.W }); return; }   // 椅背在後、正面朝桌子
     const hx = D.chairD / 2, hy = D.chairW / 2;
     box(cx - hx + 6, cx + hx - 3, cy - hy + 2, cy + hy - 2, D.seat - 7, D.seat, fab, fab, g);    // 軟墊座面
     for (const sx of [-1, 1]) for (const sy of [-1, 1]) {
@@ -2317,6 +2440,11 @@ function setBeam(k) {
   saveSettings();
 }
 selBeam.addEventListener('change', e => setBeam(e.target.value));
+document.getElementById('sel-furn').addEventListener('change', e => {
+  furnStyle = e.target.value === 'box' ? 'box' : 'model';
+  redrawFurniture();
+  saveSettings();
+});
 
 // 陽光：方位（平面圖上方為北，順時針）與高度角；太陽低時光線較暖、較暗
 const SUN_DIST = 17.2;
@@ -2370,6 +2498,7 @@ function saveSettings() {
     cut: +cut.value, sunAz: +sunAz.value, sunEl: +sunEl.value, spin: spin.checked,
     wall: wallColor,
     beam: beamMode,
+    furn: furnStyle,
   };
   try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(s)); }
   catch (err) { console.error(MSG_SETTINGS_SAVE_FAIL, err); }
@@ -2400,6 +2529,7 @@ function loadSettings() {
     setSun();
     setWallColor(pick(s.wall, Object.keys(WALL_COLORS), 'warm'));
     beamMode = pick(s.beam, ['show', 'ghost', 'off'], 'show'); selBeam.value = beamMode;
+    furnStyle = pick(s.furn, ['model', 'box'], 'model'); document.getElementById('sel-furn').value = furnStyle;
     setKitchen(typeof s.kitchen === 'boolean' ? s.kitchen : true);
     updatePartitionUI();
     rebuild(+cut.value);
