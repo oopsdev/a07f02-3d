@@ -99,6 +99,8 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
 .field { display: grid; grid-template-columns: 5.2em minmax(0, 1fr); align-items: center; gap: 8px; }
 .field label { font-size: 13px; color: var(--muted); }
 .field select { font: inherit; font-size: 13px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--ink); min-width: 0; width: 100%; }
+.quote-hint { margin: 0; font-size: 12px; color: var(--muted); line-height: 1.6; }
+.quote-btn { color: var(--accent); border-color: var(--accent); }
 .reset-btn { align-self: flex-start; font: inherit; font-size: 12px; padding: 5px 12px; border: 1px solid var(--line); border-radius: 6px; background: transparent; color: var(--muted); cursor: pointer; }
 .reset-btn:hover { border-color: var(--accent); color: var(--ink); }
 .field select:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
@@ -331,6 +333,12 @@ input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px;
           <button type="button" class="reset-btn" id="reset-settings">恢復預設設定</button>
         </div>
       </div>
+    </section>
+
+    <section class="sec" id="quote-sec" hidden>
+      <h2>估價清單</h2>
+      <p class="quote-hint">另開本機的「A07F02_估價清單.html」，帶入目前設定（廚房、臥室一隔間、電視位置、床型）下的尺寸與數量。</p>
+      <button type="button" class="reset-btn quote-btn" id="quote-open">開啟估價清單</button>
     </section>
 
     <section class="sec">
@@ -1775,11 +1783,11 @@ const GRILLE_H = 100;
 
 
 // 玄關櫃（前淺後深，沿玄關南牆內面 lo('entS')），兩段都做到天花板（WALL_H）：
-//   前段（靠大門）x 30～131.6：深 36，與大門南側內凹（約 36）同深——大門鉸鏈在北側往內開，門片外緣轉動時掃到南側約 y 468，前段櫃面要退到這條線後面才不卡門。90～130 為 40 cm 中空開放層（露出牆上 FL+120 的開關與控制面板），
-//     中空正下方左右兩個抽屜（鑰匙、口罩、證件），抽屜下方為鞋櫃（左右門），櫃底懸空 20 放常穿的鞋；懸空處與中空開放層都有 LED 間接照明；中空以上為上櫃
+//   前段（靠大門）x 30～131.6：深 36，與大門南側內凹（約 36）同深——大門鉸鏈在北側往內開，門片外緣轉動時掃到南側約 y 468，前段櫃面要退到這條線後面才不卡門。90～135 為 45 cm 中空開放層（露出牆上 FL+120 的開關與控制面板），
+//     中空正下方左右兩個抽屜（鑰匙、口罩、證件），抽屜下方為鞋櫃（左右門），櫃底懸空 25 放常穿的鞋；懸空處與中空開放層都有 LED 間接照明；中空以上為上櫃
 //   後段（往餐廳）x 131.6～厚外牆北端西面（與牆面切齊）：深 45，落地到天花板整面封閉收納（鞋子、外套、吸塵器）
 // 後段東端與厚外牆北端（thickN）的西側面切齊，內縮 0.3 避免共平面閃動
-const ENTRY_CAB = { wall: lo('entS'), fx0: hi('entW') + 3.1, split: 131.6, bx1: lo('thickN') - 0.3, fd: 36, lift: 20, bd: 45, bh: WALL_H, niche: [90, 130], drawerRow: [72, 90], midSplit: 110 };   // 抽屜左右並排一排（72～90），下方 20～72 為鞋櫃
+const ENTRY_CAB = { wall: lo('entS'), fx0: hi('entW') + 3.1, split: 131.6, bx1: lo('thickN') - 0.3, fd: 36, lift: 25, bd: 45, bh: WALL_H, niche: [90, 135], drawerRow: [72, 90], midSplit: 110 };   // 抽屜左右並排一排（72～90），下方 25～72 為鞋櫃
 // 上櫃與下櫃層板橫跨整個櫃寬；只有中櫃（hangBottom～hangTop）有中隔板：吊掛區＋層板區
 // 下櫃 5 層、上櫃 4 層放鞋（鞋尖朝內、鞋跟朝外），層板橫跨整個櫃寬；中櫃 hangBottom～hangTop 有中隔板
 const ENTRY_BACK = { hangW: 60, hangTop: 240, hangBottom: 100, shoeLevels: [1.8, 20, 40, 60, 80, 240, 262, 285, 307], fullShelves: [20, 40, 60, 80, 100, 240, 262, 285, 307], midShelves: [147, 194], handles: [85, 165, 255] };   // 兩區門片同高分割，把手同高
@@ -1948,11 +1956,10 @@ function buildEntryBack() {
 buildEntryBack();
 
 // 洞洞板（木工訂做，孔距 25 mm）：貼滿廚房北牆西段朝餐廳／玄關的那一面（廚房北牆北面），
-// 從厚外牆北端到流理台東緣、離地 10 到樑底；2 個登山背包上下排，登山杖一副掛在旁邊（示意）
-const PEGBOARD = { x0: lo('thickN') + 0.3, x1: COUNTER_X1 - 0.8, face: lo('kN'), h0: 10, h1: BEAM_BOTTOM - 2, t: 1.2 };   // 上緣做到廚房北側樑的樑底
-{
-  const g = new THREE.Group(), PB = PEGBOARD;
-  // 洞洞板貼圖：淺色木夾板、圓孔 ø6 mm、孔距 25 mm（貼圖一張代表 10 × 10 cm，4 × 4 孔）
+// 從厚外牆北端到流理台東緣、從地面做到樑底；2 個登山背包上下排，登山杖兩副掛在旁邊（示意）
+// 洞洞板材質（木工訂做）：淺色木夾板、圓孔 ø6 mm、孔距 25 mm（貼圖一張代表 10 × 10 cm，4 × 4 孔），依板子尺寸重複
+const PEG_EDGE = new THREE.MeshStandardMaterial({ color: 0xd9bf98, roughness: 0.6 });
+function pegMat(lenCm, hCm) {
   const c = document.createElement('canvas'); c.width = 128; c.height = 128;
   const x = c.getContext('2d');
   x.fillStyle = '#d9bf98'; x.fillRect(0, 0, 128, 128);
@@ -1966,9 +1973,13 @@ const PEGBOARD = { x0: lo('thickN') + 0.3, x1: COUNTER_X1 - 0.8, face: lo('kN'),
   }
   const tex = new THREE.CanvasTexture(c);
   tex.wrapS = tex.wrapT = THREE.RepeatWrapping; tex.colorSpace = THREE.SRGBColorSpace;
-  tex.repeat.set((PB.x1 - PB.x0) / 10, (PB.h1 - PB.h0) / 10);
-  const peg = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.6 });
-  const edge = new THREE.MeshStandardMaterial({ color: 0xd9bf98, roughness: 0.6 });
+  tex.repeat.set(lenCm / 10, hCm / 10);
+  return new THREE.MeshStandardMaterial({ map: tex, roughness: 0.6 });
+}
+const PEGBOARD = { x0: lo('thickN') + 0.3, x1: COUNTER_X1 - 0.8, face: lo('kN'), h0: 0, h1: BEAM_BOTTOM - 2, t: 1.2 };   // 上緣做到廚房北側樑的樑底
+{
+  const g = new THREE.Group(), PB = PEGBOARD;
+  const peg = pegMat(PB.x1 - PB.x0, PB.h1 - PB.h0), edge = PEG_EDGE;
   const by0 = PB.face - 0.3 - PB.t, by1 = PB.face - 0.3;                // 離牆 0.3，不與牆面共平面
   const board = box(PB.x0, PB.x1, by0, by1, PB.h0, PB.h1, edge, edge, g);
   board.material = board.material.slice(); board.material[5] = peg;     // 朝北（餐廳側）那一面用洞洞板貼圖
@@ -1986,20 +1997,43 @@ const PEGBOARD = { x0: lo('thickN') + 0.3, x1: COUNTER_X1 - 0.8, face: lo('kN'),
     }
     box(cx - 17, cx + 17, by0 - 6, by0 - 2, top - 54, top - 48, a, a, g);          // 腰帶
   };
-  pack(PB.x0 + 26.8, 262, 0xd8632a, 0x3b3f42);                                    // 上：橘色背包
-  pack(PB.x0 + 26.8, 167, 0x2f7f86, 0x2b3134);                                    // 下：藍綠色背包
-  // 登山杖一副（兩支），直掛在背包右側
-  for (const px of [PB.x0 + 61.8, PB.x0 + 68.8]) {
-    box(px - 1, px + 1, by0 - 3, by0, 223, 226, steel, steel, g);                  // 掛勾
-    ell(px, by0 - 3, 1.6, 1.6, 200, 222, new THREE.MeshStandardMaterial({ color: 0x2a2d30, roughness: 0.7 }), g);   // 握把
-    ell(px, by0 - 3, 0.8, 0.8, 90, 200, steel, g);                                 // 杖身
-    ell(px, by0 - 3, 2.2, 2.2, 102, 103, new THREE.MeshStandardMaterial({ color: 0x2a2d30, roughness: 0.7 }), g);   // 雪花盤
+  // 版面：左欄背包（含側袋寬 37）上下排；右欄登山杖兩副也上下排，各對齊旁邊的背包；三段留白平均分配
+  const PACK_W = 37, POLE_ZONE = 10, gap = (PB.x1 - PB.x0 - PACK_W - POLE_ZONE) / 3;
+  const packX = PB.x0 + gap + PACK_W / 2, poleX0 = PB.x0 + 2 * gap + PACK_W;
+  // 高度以身高 172 cm 舉手拿得到為準：舒適的舉手抓握高度約 195～205 cm，上排掛勾 192；下排 122，上排登山杖底端（約 120）不碰到下排掛勾
+  const ROWS = [[192, 0xd8632a, 0x3b3f42, 0x2a2d30], [122, 0x2f7f86, 0x2b3134, 0xc8402a]];   // [掛勾高度, 背包色, 配色, 登山杖握把色]
+  for (const [top, color, accent, grip] of ROWS) {
+    pack(packX, top, color, accent);                                             // 上：橘色背包／下：藍綠色背包
+    // 登山杖一副（兩支，收短約 68 cm 掛著），掛勾與旁邊背包同高，握把顏色兩副跳色
+    const gm = new THREE.MeshStandardMaterial({ color: grip, roughness: 0.7 });
+    for (const dx of [2, 8]) {
+      const px = poleX0 + dx;
+      box(px - 1, px + 1, by0 - 3, by0, top - 3, top, steel, steel, g);            // 掛勾
+      ell(px, by0 - 3, 1.6, 1.6, top - 22, top - 4, gm, g);                        // 握把
+      ell(px, by0 - 3, 0.8, 0.8, top - 72, top - 22, steel, g);                    // 杖身（收短）
+      ell(px, by0 - 3, 2.2, 2.2, top - 62, top - 61, gm, g);                       // 雪花盤
+    }
   }
   const el = document.createElement('div');
   el.className = 'lbl';
-  el.innerHTML = '洞洞板（木工・孔距 25 mm）<small>登山背包 ×2・登山杖</small>';
+  el.innerHTML = '洞洞板（木工・孔距 25 mm）<small>登山背包 ×2・登山杖 ×2 副</small>';
   const o = new CSS2DObject(el);
   { const [px, pz] = P((PB.x0 + PB.x1) / 2, by0 - 25); o.position.set(px, 2.2, pz); }
+  g.add(o);
+  scene.add(g);
+}
+// 洞洞板二：客浴東牆朝餐廳那一面（從客浴出來往後陽台的路上），從餐廳北牆南面到牆端、從地面做到樑底（上方是餐廳西側縱樑）
+const PEGBOARD2 = { face: hi('gbE'), y0: hi('dinN') + 0.3, y1: hi('entN') - 0.3, h0: 0, h1: BEAM_BOTTOM - 2, t: 1.2 };
+{
+  const g = new THREE.Group(), PB = PEGBOARD2;
+  const bx0 = PB.face + 0.3, bx1 = bx0 + PB.t;                         // 離牆 0.3，不與牆面共平面
+  const board = box(bx0, bx1, PB.y0, PB.y1, PB.h0, PB.h1, PEG_EDGE, PEG_EDGE, g);
+  board.material = board.material.slice(); board.material[0] = pegMat(PB.y1 - PB.y0, PB.h1 - PB.h0);   // 朝東（餐廳側）那一面用洞洞板貼圖
+  const el = document.createElement('div');
+  el.className = 'lbl';
+  el.innerHTML = `洞洞板（木工・孔距 25 mm）<small>${Math.round(PB.y1 - PB.y0)} × ${PB.h1 - PB.h0}</small>`;
+  const o = new CSS2DObject(el);
+  { const [px, pz] = P(bx1 + 20, (PB.y0 + PB.y1) / 2); o.position.set(px, 2.0, pz); }
   g.add(o);
   scene.add(g);
 }
@@ -2631,7 +2665,7 @@ const ceilGroup = new THREE.Group();
   ceilGroup.visible = false;
   scene.add(ceilGroup);
 }
-const walk = { on: false, pos: new THREE.Vector3(), yaw: 0, pitch: 0, move: null, saved: null, drag: null };
+const walk = { on: false, pos: new THREE.Vector3(), yaw: 0, pitch: 0, move: null, saved: null, drag: null, entryOpened: false };
 const walkBtn = document.getElementById('walk'), hintEl = document.getElementById('hint');
 const hintDefault = hintEl.textContent;
 const walkRay = new THREE.Raycaster();
@@ -2703,6 +2737,7 @@ function enterWalk() {
 }
 function exitWalk() {
   if (!walk.on) return;
+  closeEntryInWalk();                                             // 離開漫遊時關上漫遊中打開的玄關櫃
   walk.on = false; walkActive = false; walk.move = null; walk.drag = null;
   ceilGroup.visible = false;
   camera.fov = walk.saved.fov; camera.updateProjectionMatrix();
@@ -2738,6 +2773,11 @@ cv.addEventListener('pointerup', e => {
   ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
   ray.setFromCamera(ndc, camera);
   const hit = ray.intersectObjects(scene.children, true).find(h => h.object.isMesh && !h.object.isSprite && visibleChain(h.object) && !h.object.userData.ceiling);
+  if (hit && hit.object.userData.entryBack) {                       // 點玄關櫃後段：打開看內裝（再點一次關上）
+    if (walk.entryOpened) closeEntryInWalk();
+    else if (!entryInterior) { entryInterior = true; buildEntryBack(); walk.entryOpened = true; }
+    return;
+  }
   if (hit) walkTo(hit.point.x - walk.pos.x, hit.point.z - walk.pos.z);
   else walkStep(STEP_LEN);      // 點到天空：往前走一步
 });
@@ -2758,6 +2798,19 @@ window.addEventListener('keydown', e => {
   else return;
   e.preventDefault();
 });
+// 漫遊時打開的玄關櫃：視線轉開（櫃子中心不在畫面內）就自動關上
+const entryProbe = new THREE.Vector3();
+function closeEntryInWalk() {
+  if (!walk.entryOpened) return;
+  walk.entryOpened = false;
+  entryInterior = false;
+  buildEntryBack();
+}
+function entryInView() {
+  const E = ENTRY_CAB, [px, pz] = P((E.split + E.bx1) / 2, E.wall - E.bd / 2);
+  entryProbe.set(px, M(150), pz).project(camera);
+  return entryProbe.z < 1 && Math.abs(entryProbe.x) < 1 && Math.abs(entryProbe.y) < 1;
+}
 function walkUpdate(now) {
   const m = walk.move;
   if (m) {
@@ -2766,8 +2819,43 @@ function walkUpdate(now) {
     if (k === 1) walk.move = null;
   }
   walkCamera();
+  if (walk.entryOpened && !entryInView()) closeEntryInWalk();
 }
 
+// ---------- 估價清單（只在本機版）：本檔只匯出目前設定下的尺寸與數量，單價與估價單版面在本機的 A07F02_估價清單.html ----------
+const QUOTE_PAGE = 'A07F02_估價清單.html';
+function quoteMeasure() {
+  const n = PARTS.b1n, w = PARTS.b1w, d = w.door, E = ENTRY_CAB, C = CARPCAB;
+  const cback = hi('livN') + 0.3, cf = hi('livN') + C.d;
+  let cabLen = C.x1 - C.x0;                                              // 吊櫃：扣掉樑下不做的段落
+  for (const b of BEAMS) if (b.x1 > C.x0 && b.x0 < C.x1 && b.y1 > cback && b.y0 < cf) cabLen -= Math.min(C.x1, b.x1) - Math.max(C.x0, b.x0);
+  const r1 = v => Math.round(v * 10) / 10;
+  return {
+    v: 1,
+    wallH: WALL_H,
+    indoorArea: Math.round(ROOMS.filter(r => !r.out).reduce((s, r) => s + r.area, 0) * 100) / 100,   // m²
+    kitchenOpen: kitchen.open,
+    kitchen: { knLen: r1(lo('kE') - COUNTER_X1), openW: r1(OP.kOpen[1] - OP.kOpen[0]), openH: 230, keLen: r1(FRIDGE_Y[0] - hi('kN')) },
+    glass: partition.mode === 'glass' && partition.waist < WALL_H,
+    bed1: { waist: partition.waist, glassType: partition.glassType, frame: FRAMES[partition.frame].name,
+      nLen: r1(n.to - n.from), wLen: r1(w.to - w.from), doorW: r1(d.to - d.from), doorH: d.head, fixW: r1(w.to - d.to) },
+    tvNorth: living.swap,
+    layout: document.getElementById('sel-layout').value,
+    entry: { front: r1(E.split - E.fx0), back: r1(E.bx1 - E.split), fd: E.fd, bd: E.bd, niche: E.niche[1] - E.niche[0], lift: E.lift },
+    cabinet: { len: r1(cabLen), d: C.d, h0: BEAM_BOTTOM },
+    pegboards: [
+      { name: '廚房北牆', w: r1(PEGBOARD.x1 - PEGBOARD.x0), h: PEGBOARD.h1 - PEGBOARD.h0 },
+      { name: '客浴東牆', w: r1(PEGBOARD2.y1 - PEGBOARD2.y0), h: PEGBOARD2.h1 - PEGBOARD2.h0 },
+    ],
+  };
+}
+// 只在直接開啟 HTML 檔時顯示按鈕；GitHub Pages 等網路版沒有估價清單檔，維持隱藏
+if (location.protocol === 'file:') {
+  document.getElementById('quote-sec').hidden = false;
+  document.getElementById('quote-open').addEventListener('click', () => {
+    window.open(QUOTE_PAGE + '#' + encodeURIComponent(JSON.stringify(quoteMeasure())), '_blank');
+  });
+}
 // ---------- 主題 ----------
 function applyTheme() {
   const c = getComputedStyle(document.documentElement).getPropertyValue('--scene').trim() || '#e3e8e5';
