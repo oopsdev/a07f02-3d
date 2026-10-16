@@ -397,7 +397,7 @@ import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
 const MSG_SETTINGS_SAVE_FAIL = '無法儲存設定（瀏覽器可能封鎖本機儲存），重新載入後會回到預設值。';
 const MSG_SETTINGS_LOAD_FAIL = '無法讀取已儲存的設定，改用預設值。';
-const MSG_WALK_HINT = '點一下往那個方向走一步 · 拖曳轉頭 · 方向鍵／WASD 移動 · Esc 離開';
+const MSG_WALK_HINT = '點一下往那個方向走一步 · 拖曳轉頭 · 雙指縮放 · 方向鍵／WASD 移動 · Esc 離開';
 const MSG_MODEL_FAIL = 'IKEA 3D 模型載入失敗，這件家具改用方塊：';
 const MSG_WALK_BLOCKED = '前方被擋住了，換個方向試試';
 const MSG_WEBGL_FAIL = '這個瀏覽器無法啟動 3D 繪圖（WebGL）。請改用最新版 Chrome、Edge 或 Safari 開啟。';
@@ -2738,6 +2738,7 @@ function enterWalk() {
 function exitWalk() {
   if (!walk.on) return;
   closeEntryInWalk();                                             // 離開漫遊時關上漫遊中打開的玄關櫃
+  touchPts.clear(); pinch = null;                                 // 清掉漫遊中的手指與縮放狀態（視角在下面還原）
   walk.on = false; walkActive = false; walk.move = null; walk.drag = null;
   ceilGroup.visible = false;
   camera.fov = walk.saved.fov; camera.updateProjectionMatrix();
@@ -2750,23 +2751,43 @@ function exitWalk() {
   hintEl.textContent = hintDefault;
 }
 walkBtn.addEventListener('click', () => walk.on ? exitWalk() : enterWalk());
-// 拖曳轉頭（抓住畫面的方向：往右拖＝往左看），點一下＝往點到的方向走一步
+// 拖曳轉頭（抓住畫面的方向：往右拖＝往左看），點一下＝往點到的方向走一步；
+// 手機雙指捏合＝縮放（改變視角 WALK_FOV_MIN～WALK_FOV_MAX，像拉近鏡頭，人不移動）。雙指放開前不算點擊
+const WALK_FOV_MIN = 30, WALK_FOV_MAX = 90;
 const cv = renderer.domElement;
+const touchPts = new Map();                                        // 目前按在畫面上的手指
+let pinch = null;                                                  // { d: 起始兩指距離, fov: 起始視角 }
+const twoDist = () => { const [a, b] = [...touchPts.values()]; return Math.hypot(a.x - b.x, a.y - b.y) || 1; };
 cv.addEventListener('pointerdown', e => {
   if (!walk.on) return;
-  walk.drag = { id: e.pointerId, x: e.clientX, y: e.clientY, sx: e.clientX, sy: e.clientY };
+  touchPts.set(e.pointerId, { x: e.clientX, y: e.clientY });
   cv.setPointerCapture(e.pointerId);
+  if (touchPts.size === 2) { pinch = { d: twoDist(), fov: camera.fov }; walk.drag = null; return; }
+  if (touchPts.size > 2 || pinch) return;
+  walk.drag = { id: e.pointerId, x: e.clientX, y: e.clientY, sx: e.clientX, sy: e.clientY };
 });
 cv.addEventListener('pointermove', e => {
+  if (walk.on && touchPts.has(e.pointerId)) touchPts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (walk.on && pinch && touchPts.size >= 2) {
+    camera.fov = Math.min(WALK_FOV_MAX, Math.max(WALK_FOV_MIN, pinch.fov * pinch.d / twoDist()));   // 兩指拉開＝放大（視角變小）
+    camera.updateProjectionMatrix();
+    return;
+  }
   const d = walk.drag;
   if (!walk.on || !d || d.id !== e.pointerId) return;
   walk.yaw -= (e.clientX - d.x) * 0.005;
   walk.pitch = Math.max(-1.2, Math.min(1.2, walk.pitch + (e.clientY - d.y) * 0.005));
   d.x = e.clientX; d.y = e.clientY;
 });
+const releasePointer = e => {
+  touchPts.delete(e.pointerId);
+  if (pinch && touchPts.size === 0) pinch = null;                  // 兩指都放開才結束縮放
+};
 cv.addEventListener('pointerup', e => {
+  const wasPinch = !!pinch;
+  releasePointer(e);
   const d = walk.drag;
-  if (!walk.on || !d || d.id !== e.pointerId) return;
+  if (!walk.on || wasPinch || !d || d.id !== e.pointerId) return;
   walk.drag = null;
   if (Math.hypot(e.clientX - d.sx, e.clientY - d.sy) > 6) return;   // 拖曳過就不算點擊
   const r = cv.getBoundingClientRect();
@@ -2781,7 +2802,7 @@ cv.addEventListener('pointerup', e => {
   if (hit) walkTo(hit.point.x - walk.pos.x, hit.point.z - walk.pos.z);
   else walkStep(STEP_LEN);      // 點到天空：往前走一步
 });
-cv.addEventListener('pointercancel', () => { walk.drag = null; });
+cv.addEventListener('pointercancel', e => { releasePointer(e); walk.drag = null; });
 cv.addEventListener('wheel', e => {
   if (!walk.on) return;
   e.preventDefault();
