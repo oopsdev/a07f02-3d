@@ -99,6 +99,10 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
 .field { display: grid; grid-template-columns: 5.2em minmax(0, 1fr); align-items: center; gap: 8px; }
 .field label { font-size: 13px; color: var(--muted); }
 .field select { font: inherit; font-size: 13px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--ink); min-width: 0; width: 100%; }
+.legend { list-style: none; margin: 0 0 8px; padding: 0; display: flex; flex-direction: column; gap: 5px; font-size: 12px; }
+.legend li { display: grid; grid-template-columns: 14px 1fr; gap: 8px; align-items: center; }
+.legend i { width: 14px; height: 10px; border-radius: 2px; border: 1px solid rgba(0, 0, 0, .25); }
+.legend b { font-weight: 600; margin-right: 6px; }
 .checks { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; font-size: 12px; }
 .checks label { display: grid; grid-template-columns: auto 1fr; gap: 8px; align-items: start; cursor: pointer; line-height: 1.5; }
 .checks input { margin-top: 3px; }
@@ -379,6 +383,18 @@ input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px;
       <div class="tot"><span>陽台與露台合計</span><b id="tot-out"></b></div>
     </section>
 
+    <section class="sec">
+      <h2>顏色標示（開關插座）</h2>
+      <ul class="legend">
+        <li><i style="background:#d8d6d0"></i><span><b>白色面板</b>原有的開關插座，位置不動</span></li>
+        <li><i style="background:#c0392b"></i><span><b>紅色</b>開關，要移位（標在原位置）</span></li>
+        <li><i style="background:#0e7490"></i><span><b>藍綠色</b>電源插座，要移位（標在原位置）</span></li>
+        <li><i style="background:#8e44ad"></i><span><b>紫色</b>電話、網路、電視出線，要移位（標在原位置）</span></li>
+        <li><i style="background:#2e9d5b"></i><span><b>綠色</b>移位後的新位置（設計變更，與設計師確認）</span></li>
+      </ul>
+      <p class="quote-hint">移位的項目會隨擺法改變：電視靠北牆時移電視出線、主臥放 180 床時移床頭插座；衣櫃蓋住的開關 f 與插座一律移到衣櫃北側側板。廚房打通時拆掉的牆上的開關插座，新位置待設計師決定，模型裡不畫。</p>
+    </section>
+
     <section class="sec" id="check-sec">
       <h2 id="check-title">待確認數值</h2>
       <p class="quote-hint">模型裡的假設值與圖面看不出來的尺寸，現場確認後打勾（記在這台瀏覽器）；有實際數字再告訴我改模型。</p>
@@ -391,7 +407,7 @@ input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px;
         <li>牆線取自 SH3D_平面尺寸圖.sh3d，再補上尺寸圖 A07F02_尺寸.png 的淨寬。</li>
         <li>面積是室內淨面積的概算，不是權狀坪數。1 坪 = 3.3058 m²。</li>
         <li>門窗形式與顏色依實品屋照片：陽台為黑框雙片拉門，臥室為黑框「上橫拉、下固定」窗；高度依照片比例推算。客廳落地窗位置取自 SH3D 檔，主臥窗寬依 PDF 磁簧開關位置推算。</li>
-        <li>家具尺寸取自 IKEA 台灣官網，價格與庫存以官網為準；寢具顏色為示意。主臥床頭靠南牆。南牆色塊：藍＝雙連插座（距西牆 170、350 cm）、紫＝電話網路、紅＝開關與緊急押扣、綠＝建議移位後的插座位置（設計變更）。</li>
+        <li>家具尺寸取自 IKEA 台灣官網，價格與庫存以官網為準；寢具顏色為示意。主臥床頭靠南牆，南牆雙連插座距西牆 170、350 cm；開關插座的顏色見上方「顏色標示」。</li>
         <li>原圖註明圖面與現場有 5～8 cm 誤差，裝修請以現場丈量為準。</li>
       </ul>
     </section>
@@ -1025,7 +1041,7 @@ const MB_W = hi('mbW'), MB_S = lo('south');     // 主臥西牆內面 x、南牆
 // 客廳北牆原有插座（依客戶單元圖 PDF，距客廳西牆面）：雙連插座 ×2、電視＋網路、電話＋網路，都是 FL+30
 const LIVING_N_OUTLETS = [
   { at: 33, h: 30, kind: 'power', name: '雙連插座' },
-  { at: 80, h: 30, kind: 'data', name: '電視＋網路插座' },
+  { at: 80, h: 30, kind: 'data', name: '電視＋網路插座', tvMove: true },   // 電視靠北牆時移到電視背後
   { at: 279, h: 30, kind: 'data', name: '電話＋網路插座' },
   { at: 326, h: 30, kind: 'power', name: '雙連插座' },
 ];
@@ -1036,20 +1052,27 @@ const SOUTH_OUTLETS = [
   { at: 350, h: 120, kind: 'switch' },          // 三路開關
   { at: 380, h: 120, kind: 'switch' },          // 緊急押扣
 ];
-{
-  const plate = {
-    power:  new THREE.MeshStandardMaterial({ color: 0x0e7490, roughness: 0.4 }),
-    data:   new THREE.MeshStandardMaterial({ color: 0x8e44ad, roughness: 0.4 }),
-    switch: new THREE.MeshStandardMaterial({ color: 0xc0392b, roughness: 0.4 }),
-  };
-  for (const o of SOUTH_OUTLETS) {
-    const x = MB_W + o.at;
-    box(x - 6, x + 6, MB_S - 1.2, MB_S, o.h - 4, o.h + 4, plate[o.kind]);
-  }
-  for (const o of LIVING_N_OUTLETS) {                                     // 客廳北牆原有插座（貼在北牆內面）
-    const x = hi('livW') + o.at;
-    box(x - 6, x + 6, hi('livN'), hi('livN') + 1.2, o.h - 4, o.h + 4, plate[o.kind]);
-  }
+// 牆面開關插座的顏色標示（左側面板「顏色標示」有說明）：
+//   原位不動＝白色面板（keep）；要移位＝標在原位置、依類型上色（switch 紅、power 藍綠、data 紫）；移位後的新位置＝綠色（to）
+const DEV_MAT = {
+  keep:   new THREE.MeshStandardMaterial({ color: 0xd8d6d0, roughness: 0.5 }),
+  switch: new THREE.MeshStandardMaterial({ color: 0xc0392b, roughness: 0.4 }),
+  power:  new THREE.MeshStandardMaterial({ color: 0x0e7490, roughness: 0.4 }),
+  data:   new THREE.MeshStandardMaterial({ color: 0x8e44ad, roughness: 0.4 }),
+  to:     new THREE.MeshStandardMaterial({ color: 0x2e9d5b, roughness: 0.4, emissive: 0x1d6b3c, emissiveIntensity: 0.35 }),
+};
+const devMat = (kind, moved) => moved ? DEV_MAT[kind] : DEV_MAT.keep;
+// 主臥南牆：開關、電話網路一直不動；兩組雙連插座只有 180 床（有 proposed）時才移位，在 buildLayout 畫
+for (const o of SOUTH_OUTLETS) {
+  if (o.kind === 'power') continue;
+  const x = MB_W + o.at;
+  box(x - 6, x + 6, MB_S - 1.2, MB_S, o.h - 4, o.h + 4, DEV_MAT.keep);
+}
+// 客廳北牆：電視＋網路插座只有電視靠北牆時才移位，在 buildTV 畫
+for (const o of LIVING_N_OUTLETS) {
+  if (o.tvMove) continue;
+  const x = hi('livW') + o.at;
+  box(x - 6, x + 6, hi('livN'), hi('livN') + 1.2, o.h - 4, o.h + 4, DEV_MAT.keep);
 }
 
 // 主臥擺法：床架 = 床墊 + 每側 3 cm，床頭板 8 cm；長度 196
@@ -1218,10 +1241,12 @@ function buildLayout(key) {
       }
     }
     {
-      const D = MB_WALL_DEVICES, pw = new THREE.MeshStandardMaterial({ color: 0x0e7490, roughness: 0.4 }), sw = new THREE.MeshStandardMaterial({ color: 0xc0392b, roughness: 0.4 });
-      const sx = MB_W + 40;                                                                               // 衣櫃北側側板外側、靠前緣，從主浴門口伸手可及
-      box(sx - 4, sx + 4, W.y0 - 1.2, W.y0, D.switchH - 6, D.switchH + 6, sw, sw, rg);                     // 開關 f（主浴燈）
-      box(sx - 6, sx + 6, W.y0 - 1.2, W.y0, D.outletH - 4, D.outletH + 4, pw, pw, rg);                     // 雙連插座
+      const D = MB_WALL_DEVICES, sw = DEV_MAT.switch, pw = DEV_MAT.power, to = DEV_MAT.to;
+      box(MB_W, MB_W + 1.2, D.at - 4, D.at + 4, D.switchH - 6, D.switchH + 6, sw, sw, rg);                 // 原位置：開關 f（主浴外牆，衣櫃內）
+      box(MB_W, MB_W + 1.2, D.at - 6, D.at + 6, D.outletH - 4, D.outletH + 4, pw, pw, rg);                 // 原位置：雙連插座
+      const sx = MB_W + 40;                                                                               // 新位置：衣櫃北側側板外側、靠前緣，從主浴門口伸手可及
+      box(sx - 4, sx + 4, W.y0 - 1.2, W.y0, D.switchH - 6, D.switchH + 6, to, to, rg);                     // 開關 f（主浴燈）
+      box(sx - 6, sx + 6, W.y0 - 1.2, W.y0, D.outletH - 4, D.outletH + 4, to, to, rg);                     // 雙連插座
     }
     rg.traverse(o => { if (o.isMesh) o.userData.robe = true; });
     g.add(rg);
@@ -1235,9 +1260,13 @@ function buildLayout(key) {
     const sr = document.getElementById('sel-robe');
     if (sr) sr.value = robeDoor;
   }
-  for (const at of L.proposed || []) {
+  for (const o of SOUTH_OUTLETS.filter(o => o.kind === 'power')) {      // 原位：要移位就上色，不動就白色
+    const x = MB_W + o.at, m = devMat(o.kind, !!L.proposed);
+    box(x - 6, x + 6, MB_S - 1.2, MB_S, o.h - 4, o.h + 4, m, m, g);
+  }
+  for (const at of L.proposed || []) {                                   // 移位後的新位置（綠）
     const x = MB_W + at;
-    box(x - 6, x + 6, MB_S - 1.6, MB_S - 0.2, 26, 34, furnMat.ghost, furnMat.ghost, g);
+    box(x - 6, x + 6, MB_S - 1.6, MB_S - 0.2, 26, 34, DEV_MAT.to, DEV_MAT.to, g);
   }
   scene.add(g);
   layoutGroup = g;
@@ -1488,9 +1517,13 @@ function buildTV() {
       box(fx - 1.2, fx + 1.2, face + 0.5, back - 0.5, B.h + 1.5, h0 + 6, tvMat.body, tvMat.body, g);     // 腳柱插入機身
     }
   }
-  if (swap) {                                                             // 建議移位：電視＋網路與一組電源移到電視背後（客廳中軸、FL+90），綠色
+  for (const o of LIVING_N_OUTLETS.filter(o => o.tvMove)) {             // 原位：電視靠北牆時要移位（上色），否則不動（白色）
+    const x = hi('livW') + o.at, m = devMat(o.kind, swap);
+    box(x - 6, x + 6, hi('livN'), hi('livN') + 1.2, o.h - 4, o.h + 4, m, m, g);
+  }
+  if (swap) {                                                             // 移位後的新位置：電視＋網路與一組電源到電視背後（客廳中軸、FL+90），綠色
     const yb = hi('livN');
-    for (const dx of [-14, 14]) boxRaw(TV.cx + dx - 6, TV.cx + dx + 6, yb, yb + 1, 86, 94, furnMat.ghost, furnMat.ghost, g);
+    for (const dx of [-14, 14]) boxRaw(TV.cx + dx - 6, TV.cx + dx + 6, yb, yb + 1, 86, 94, DEV_MAT.to, DEV_MAT.to, g);
   }
   box(x0, x1, face, back, h0, h1, tvMat.body, tvMat.body, g);
   const scr = box(x0 + 1.5, x1 - 1.5, face - 0.3, face, h0 + 1.5, h1 - 1.5, tvMat.screen, tvMat.screen, g);
@@ -2275,7 +2308,7 @@ const PEGBOARD2 = { face: hi('gbE'), y0: hi('dinN') + 0.3, y1: hi('entN') - 0.3,
     }
   }
   // 孔內的牆面設備
-  const plate = new THREE.MeshStandardMaterial({ color: 0xf2f1ec, roughness: 0.5 }), frame = new THREE.MeshStandardMaterial({ color: 0x2b2e30, roughness: 0.4 });
+  const plate = DEV_MAT.keep, frame = new THREE.MeshStandardMaterial({ color: 0x2b2e30, roughness: 0.4 });   // 原位不動＝白色面板
   const screen = new THREE.MeshStandardMaterial({ color: 0x0c1820, emissive: 0x0b2233, emissiveIntensity: 0.6, roughness: 0.2 });
   for (const H of PB.holes) {
     if (H.kind === 'switch') {
@@ -2523,11 +2556,10 @@ function rebuild(cut) {
   buildBeams(cut, dyn);
   buildLights(cut, dyn);
   if (ceilReady) buildCeilings();
-  if (!kitchen.open) {                                                   // 廚房原始隔間：標出會因打通而移位的開關插座
-    const plate = { power: new THREE.MeshStandardMaterial({ color: 0x0e7490, roughness: 0.4 }), switch: new THREE.MeshStandardMaterial({ color: 0xc0392b, roughness: 0.4 }) };
+  if (!kitchen.open) {                                                   // 廚房原始隔間：牆上原有開關插座不動（白色）；打通時隨牆拆除、新位置待設計師決定
     for (const d of KITCHEN_WALL_DEVICES) {
       if (d.h + 4 > cut) continue;
-      const m = plate[d.kind], w = d.gang > 1 ? 8 : 6;
+      const m = DEV_MAT.keep, w = d.gang > 1 ? 8 : 6;
       if (d.wall === 'kn') box(d.at - w, d.at + w, lo('kN') - 1.2, lo('kN'), d.h - 4, d.h + 4, m, m, dyn);
       else box(hi('kE'), hi('kE') + 1.2, d.at - w, d.at + w, d.h - 4, d.h + 4, m, m, dyn);
     }
