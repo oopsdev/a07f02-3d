@@ -2181,7 +2181,7 @@ buildEntryBack();
 // 從厚外牆北端到流理台東緣、從地面做到樑底；2 個登山背包上下排，登山杖兩副掛在旁邊（示意）
 // 洞洞板材質（木工訂做）：淺色木夾板、圓孔 ø6 mm、孔距 25 mm（貼圖一張代表 10 × 10 cm，4 × 4 孔），依板子尺寸重複
 const PEG_EDGE = new THREE.MeshStandardMaterial({ color: 0xd9bf98, roughness: 0.6 });
-function pegMat(lenCm, hCm) {
+function pegMat(lenCm, hCm, offU = 0, offV = 0) {
   const c = document.createElement('canvas'); c.width = 128; c.height = 128;
   const x = c.getContext('2d');
   x.fillStyle = '#d9bf98'; x.fillRect(0, 0, 128, 128);
@@ -2196,6 +2196,7 @@ function pegMat(lenCm, hCm) {
   const tex = new THREE.CanvasTexture(c);
   tex.wrapS = tex.wrapT = THREE.RepeatWrapping; tex.colorSpace = THREE.SRGBColorSpace;
   tex.repeat.set(lenCm / 10, hCm / 10);
+  tex.offset.set(offU / 10, offV / 10);                                   // 拆成多塊時用偏移讓孔位連續
   return new THREE.MeshStandardMaterial({ map: tex, roughness: 0.6 });
 }
 const PEGBOARD = { x0: lo('thickN') + 0.3, x1: COUNTER_X1 - 0.8, face: lo('kN'), h0: 0, h1: BEAM_BOTTOM - 2, t: 1.2 };   // 上緣做到廚房北側樑的樑底
@@ -2245,15 +2246,49 @@ const PEGBOARD = { x0: lo('thickN') + 0.3, x1: COUNTER_X1 - 0.8, face: lo('kN'),
   scene.add(g);
 }
 // 洞洞板二：客浴東牆朝餐廳那一面（從客浴出來往後陽台的路上），從餐廳北牆南面到牆端、從地面做到樑底（上方是餐廳西側縱樑）
-const PEGBOARD2 = { face: hi('gbE'), y0: hi('dinN') + 0.3, y1: hi('entN') - 0.3, h0: 0, h1: BEAM_BOTTOM - 2, t: 1.2 };
+// 牆上原有設備（客戶單元圖 PDF）：單切開關 e（後陽台吸頂燈，FL+120）、觸控保全主機（對講機，FL+135）→ 洞洞板對應位置開孔
+//   holes：y、h 為設備中心（平面 y、離地高度），w × hh 為開孔尺寸；開孔邊對齊 2.5 cm 孔距
+const PEGBOARD2 = { face: hi('gbE'), y0: hi('dinN') + 0.3, y1: hi('entN') - 0.3, h0: 0, h1: BEAM_BOTTOM - 2, t: 1.2,
+  holes: [
+    { name: '開關 e', kind: 'switch', y: 257.9, h: 120, w: 10, hh: 15 },
+    { name: '對講機（觸控保全主機）', kind: 'intercom', y: 305.7, h: 135, w: 30, hh: 22.5 },
+  ] };
 {
   const g = new THREE.Group(), PB = PEGBOARD2;
   const bx0 = PB.face + 0.3, bx1 = bx0 + PB.t;                         // 離牆 0.3，不與牆面共平面
-  const board = box(bx0, bx1, PB.y0, PB.y1, PB.h0, PB.h1, PEG_EDGE, PEG_EDGE, g);
-  board.material = board.material.slice(); board.material[0] = pegMat(PB.y1 - PB.y0, PB.h1 - PB.h0);   // 朝東（餐廳側）那一面用洞洞板貼圖
+  const snap = (v, o) => o + Math.round((v - o) / 2.5) * 2.5;
+  const holes = PB.holes.map(H => ({ ...H, y0: snap(H.y - H.w / 2, PB.y1), y1: snap(H.y + H.w / 2, PB.y1), h0: snap(H.h - H.hh / 2, PB.h0), h1: snap(H.h + H.hh / 2, PB.h0) }));
+  // 板子依開孔切成多塊：沿 y 分條，每條扣掉落在該條的開孔高度
+  const ys = [...new Set([PB.y0, PB.y1, ...holes.flatMap(H => [H.y0, H.y1])])].sort((a, b) => a - b);
+  for (let i = 0; i < ys.length - 1; i++) {
+    const ya = ys[i], yb = ys[i + 1], mid = (ya + yb) / 2;
+    const cuts = holes.filter(H => H.y0 <= mid && H.y1 >= mid).sort((a, b) => a.h0 - b.h0);
+    let hc = PB.h0;
+    for (const seg of [...cuts.map(H => [hc, H.h0, H]), [null]]) {
+      const [ha, hb] = seg[0] === null ? [hc, PB.h1] : [hc, seg[1]];
+      if (hb - ha > 0.1) {
+        const piece = box(bx0, bx1, ya, yb, ha, hb, PEG_EDGE, PEG_EDGE, g);
+        piece.material = piece.material.slice();
+        piece.material[0] = pegMat(yb - ya, hb - ha, PB.y1 - yb, ha - PB.h0);   // 朝東（餐廳側）那一面用洞洞板貼圖
+      }
+      if (seg[0] !== null) hc = seg[2].h1;
+    }
+  }
+  // 孔內的牆面設備
+  const plate = new THREE.MeshStandardMaterial({ color: 0xf2f1ec, roughness: 0.5 }), frame = new THREE.MeshStandardMaterial({ color: 0x2b2e30, roughness: 0.4 });
+  const screen = new THREE.MeshStandardMaterial({ color: 0x0c1820, emissive: 0x0b2233, emissiveIntensity: 0.6, roughness: 0.2 });
+  for (const H of PB.holes) {
+    if (H.kind === 'switch') {
+      box(PB.face, PB.face + 1.6, H.y - 3.5, H.y + 3.5, H.h - 6, H.h + 6, plate, plate, g);
+      box(PB.face + 1.6, PB.face + 2.2, H.y - 1.5, H.y + 1.5, H.h - 3, H.h + 3, frame, frame, g);
+    } else {
+      box(PB.face, PB.face + 2.2, H.y - 13, H.y + 13, H.h - 9.5, H.h + 9.5, frame, frame, g);
+      box(PB.face + 2.2, PB.face + 2.5, H.y - 11, H.y + 11, H.h - 6.5, H.h + 7.5, screen, screen, g);
+    }
+  }
   const el = document.createElement('div');
   el.className = 'lbl';
-  el.innerHTML = `洞洞板（木工・孔距 25 mm）<small>${Math.round(PB.y1 - PB.y0)} × ${PB.h1 - PB.h0}</small>`;
+  el.innerHTML = `洞洞板（木工・孔距 25 mm）<small>${Math.round(PB.y1 - PB.y0)} × ${PB.h1 - PB.h0} · 開孔：${PB.holes.map(H => H.name).join('、')}</small>`;
   const o = new CSS2DObject(el);
   { const [px, pz] = P(bx1 + 20, (PB.y0 + PB.y1) / 2); o.position.set(px, 2.0, pz); }
   g.add(o);
@@ -3172,7 +3207,7 @@ function quoteMeasure() {
     entryMat: { area: Math.round(ENTRY_MAT.rects.reduce((s, [a, b, c, d]) => s + (b - a) * (d - c), 0) / 100) / 100 },   // m²
     pegboards: [
       { name: '廚房北牆', w: r1(PEGBOARD.x1 - PEGBOARD.x0), h: PEGBOARD.h1 - PEGBOARD.h0 },
-      { name: '客浴東牆', w: r1(PEGBOARD2.y1 - PEGBOARD2.y0), h: PEGBOARD2.h1 - PEGBOARD2.h0 },
+      { name: '客浴東牆', w: r1(PEGBOARD2.y1 - PEGBOARD2.y0), h: PEGBOARD2.h1 - PEGBOARD2.h0, holes: PEGBOARD2.holes.map(H => `${H.name} ${H.w}×${H.hh}`) },
     ],
   };
 }
