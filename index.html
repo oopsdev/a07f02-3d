@@ -930,9 +930,9 @@ let furnStyle = 'model';         // model = IKEA 3D 模型、box = 簡易方塊
 const useModel = k => furnStyle === 'model' && !!ikea[k];
 const ikeaSize = k => ikea[k] ? ikea[k].size : null;
 const ROT = { S: 0, N: Math.PI, E: Math.PI / 2, W: -Math.PI / 2 };   // IKEA 模型正面朝 +Z（平面南方）；轉成朝向平面上的哪一方
-// 放模型（平面座標 cm）：rot 旋轉；fit = [寬, 深] 時平面兩軸縮放到剛好（高度不變）；
+// 放模型（平面座標 cm）：rot 旋轉；fit = [寬, 深] 時平面兩軸縮放到剛好（高度不變）；fitH 給數字時高度縮放到該值；
 // x／y 給數字＝外框中心；給 [值, +1]＝外框最小邊對齊該值（往 + 方向延伸）、[值, -1]＝最大邊對齊
-function placeModel(key, grp, { x, y, rot = 0, fit = null, floor = 0 }) {
+function placeModel(key, grp, { x, y, rot = 0, fit = null, fitH = null, floor = 0 }) {
   const t = ikea[key];
   if (!t) return null;
   const inner = t.obj.clone(true);
@@ -942,6 +942,7 @@ function placeModel(key, grp, { x, y, rot = 0, fit = null, floor = 0 }) {
   const bb = new THREE.Box3();
   holder.updateMatrixWorld(true); bb.setFromObject(holder);
   if (fit) holder.scale.set(M(fit[0]) / (bb.max.x - bb.min.x), 1, M(fit[1]) / (bb.max.z - bb.min.z));
+  if (fitH) holder.scale.y = M(fitH) / (bb.max.y - bb.min.y);
   holder.updateMatrixWorld(true); bb.setFromObject(holder);
   const at = (v, lo, hi, toW) => Array.isArray(v) ? toW(v[0]) - (v[1] > 0 ? lo : hi) : toW(v) - (lo + hi) / 2;
   holder.position.set(at(x, bb.min.x, bb.max.x, a => M(a - CX)), M(floor) - bb.min.y, at(y, bb.min.z, bb.max.z, b => M(b - CZ)));
@@ -1133,15 +1134,23 @@ function buildLayout(key) {
     const rg = new THREE.Group(), white = furnMat.robe, st = mat.steel;
     box(wx0, fx1, W.y0, W.y0 + W.side, 0, W.h - 0.3, white, furnMat.robeCap, rg);            // 北側板（到頂）
     box(wx0, fx1, W.y1 - W.side, W.y1 - 0.3, 0, W.h - 0.3, white, furnMat.robeCap, rg);      // 南側板
+    // ELVARLI 用 IKEA 官方模型（立柱拉高到頂、層板與掛衣桿轉 90° 沿牆、支架從牆往外伸）；讀不到模型時畫方塊
+    const elv = useModel('elv_post') && useModel('elv_shelf') && useModel('elv_rail') && useModel('elv_bracket');
     for (let i = 0; i <= W.sections.length; i++) {                                         // ELVARLI 立柱（頂天立地）
       const p = W.elv0 + i * W.pitch;
-      box(wx0 + 1, wx0 + 4, p, p + W.post, 0, W.h - 0.3, white, white, rg);
+      if (elv) placeModel('elv_post', rg, { x: [wx0, 1], y: p + W.post / 2, fitH: W.h - 0.3 });
+      else box(wx0 + 1, wx0 + 4, p, p + W.post, 0, W.h - 0.3, white, white, rg);
     }
+    const brackets = (a, b, top) => {                                                      // 每個層板／掛衣桿兩端各一支支架，頂面對齊 top
+      if (!elv) return;
+      for (const yb of [a + 1.5, b - 1.5]) placeModel('elv_bracket', rg, { x: [wx0, 1], y: yb, floor: top - ikeaSize('elv_bracket')[1] });
+    };
     const cloth = [0xd8632a, 0x2f7f86, 0xe0a526, 0x3d4f8f, 0xc8402a, 0x6b8f3a];               // 示意衣物（跳色）
     W.sections.forEach((sc, i) => {
       const a = W.elv0 + i * W.pitch + W.post, b = W.elv0 + (i + 1) * W.pitch;
       for (const sh of sc.shelves) {
-        box(wx0, ex1, a + 0.3, b - 0.3, sh, sh + 2.5, white, white, rg);                    // 層板 80×51
+        if (elv) { placeModel('elv_shelf', rg, { x: [wx0, 1], y: (a + b) / 2, rot: ROT.E, floor: sh }); brackets(a, b, sh); }   // 層板 80×51
+        else box(wx0, ex1, a + 0.3, b - 0.3, sh, sh + 2.5, white, white, rg);
         let k = 0;
         for (let yy = a + 3; yy + 26 < b; yy += 27) {                                      // 摺疊衣物
           const m = new THREE.MeshStandardMaterial({ color: cloth[(i * 3 + k++) % cloth.length], roughness: 0.9 });
@@ -1150,7 +1159,8 @@ function buildLayout(key) {
       }
       sc.rails.forEach((rh, j) => {
         const rx = MB_W + W.depth / 2;
-        box(rx - 1, rx + 1, a + 0.5, b - 0.5, rh - 1, rh + 1, st, st, rg);                    // 掛衣桿 80
+        if (elv) { placeModel('elv_rail', rg, { x: rx, y: (a + b) / 2, rot: ROT.E, floor: rh - 1.4 }); brackets(a, b, rh + 1.4); }   // 掛衣桿 80
+        else box(rx - 1, rx + 1, a + 0.5, b - 0.5, rh - 1, rh + 1, st, st, rg);
         const len = sc.rails.length === 1 ? 110 : (j === 0 ? 62 : 78);                       // 長掛 110；雙層：下層褲子 62、上層襯衫 78
         for (let yy = a + 6, k = 0; yy + 3 < b - 4; yy += 9, k++) {                          // 衣架上的衣服（垂直於掛衣桿）
           const m = new THREE.MeshStandardMaterial({ color: cloth[(i + j * 2 + k) % cloth.length], roughness: 0.9 });
