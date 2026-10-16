@@ -99,6 +99,12 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
 .field { display: grid; grid-template-columns: 5.2em minmax(0, 1fr); align-items: center; gap: 8px; }
 .field label { font-size: 13px; color: var(--muted); }
 .field select { font: inherit; font-size: 13px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--ink); min-width: 0; width: 100%; }
+.checks { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; font-size: 12px; }
+.checks label { display: grid; grid-template-columns: auto 1fr; gap: 8px; align-items: start; cursor: pointer; line-height: 1.5; }
+.checks input { margin-top: 3px; }
+.checks b { font-weight: 600; }
+.checks small { display: block; color: var(--muted); }
+.checks li.done { opacity: .55; }
 .quote-hint { margin: 0; font-size: 12px; color: var(--muted); line-height: 1.6; }
 .quote-btn { color: var(--accent); border-color: var(--accent); }
 .reset-btn { align-self: flex-start; font: inherit; font-size: 12px; padding: 5px 12px; border: 1px solid var(--line); border-radius: 6px; background: transparent; color: var(--muted); cursor: pointer; }
@@ -373,6 +379,12 @@ input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px;
       <div class="tot"><span>陽台與露台合計</span><b id="tot-out"></b></div>
     </section>
 
+    <section class="sec" id="check-sec">
+      <h2 id="check-title">待確認數值</h2>
+      <p class="quote-hint">模型裡的假設值與圖面看不出來的尺寸，現場確認後打勾（記在這台瀏覽器）；有實際數字再告訴我改模型。</p>
+      <ul class="checks" id="check-list"></ul>
+    </section>
+
     <section class="sec">
       <h2>資料來源與限制</h2>
       <ul class="notes">
@@ -411,7 +423,8 @@ const MSG_WALK_BLOCKED = '前方被擋住了，換個方向試試';
 const MSG_WEBGL_FAIL = '這個瀏覽器無法啟動 3D 繪圖（WebGL）。請改用最新版 Chrome、Edge 或 Safari 開啟。';
 // 設定載入完成前不寫入 localStorage（初始化時各區域會先用預設值建一次，不能蓋掉已儲存的設定）
 let settingsReady = false;
-let walkActive = false;   // 室內漫遊中：所有 rebuild 一律用完整牆高
+let walkActive = false;
+let ceilReady = false;     // 天花板群組建立後才在 rebuild 時重建（廚房打通與否會改變降板封板）   // 室內漫遊中：所有 rebuild 一律用完整牆高
 
 // ---------- 平面資料（cm，x 向右、y 向下，對應 SH3D 座標） ----------
 // ── 高度基準：只要改 WALL_H（室內淨高）與 SLAB_T（樓板厚），其他牆高、天花板、滑桿上限、上牆櫃位置都會跟著變 ──
@@ -489,6 +502,9 @@ const COUNTER_X1 = hi('lining') + KIT.counterD;                                /
 const APP_Y0 = lo('kS') - KIT.appD;                                           // 電器櫃北緣
 const FRIDGE_Y = [APP_Y0 - KIT.fridgeGap - KIT.fridge, APP_Y0 - KIT.fridgeGap];   // 冰箱南北
 const FRIDGE_X1 = lo('kE');                                                   // 冰箱靠廚房東牆
+// 降板天花（地面到天花板，cm）：客戶單元圖沒有標示，先用常見值（廚房包排油煙管、浴室包暖風機與排風管），待現場確認
+const CEIL = { kitchen: 250, gbath: 230, mbath: 230 };
+const ceilH = roomId => CEIL[roomId] ?? WALL_H;
 // ================= 平面定義結束 =================
 
 const WALLS = [
@@ -1767,9 +1783,9 @@ const LIGHTS = [
   { type: 'flush',   sw: 'm', room: '走道',   x: 542.7, y: 545.5 },
   { type: 'flush',   sw: 'h', room: '臥室一', x: 744.8, y: 576.0 },
   { type: 'flush',   sw: 'i', room: '主臥',   x: 611.2, y: 826.6 },
-  { type: 'recess',  sw: 'd', room: '廚房',   x: 363.4, y: 664.3 },
-  { type: 'recess',  sw: 'g', room: '客浴',   x: 169.9, y: 261.5 },
-  { type: 'recess',  sw: 'f', room: '主浴',   x: 351.3, y: 782.4 },
+  { type: 'recess',  sw: 'd', room: '廚房',   x: 363.4, y: 664.3, ceil: ceilH('kitchen') },
+  { type: 'recess',  sw: 'g', room: '客浴',   x: 169.9, y: 261.5, ceil: ceilH('gbath') },
+  { type: 'recess',  sw: 'f', room: '主浴',   x: 351.3, y: 782.4, ceil: ceilH('mbath') },
   { type: 'balcony', sw: 'e', room: '後陽台', x: 357.7, y: 128.7, out: true },
   { type: 'outlet',  sw: '',  room: '後陽台', x: 326.0, y: 212.7, out: true },
   { type: 'wall',    sw: 'j', room: '陽台',   x: hi('livE'), y: 284.0, out: true },
@@ -1798,7 +1814,7 @@ function buildLights(cut, group) {
       box(L.x + 8, L.x + 8.6, L.y - 4.5, L.y + 4.5, 197, 209, lightMat.glow, lightMat.glow, group);
       continue;
     }
-    const top = WALL_H - 0.3;
+    const top = (L.ceil ?? WALL_H) - 0.3;
     if (cut < top) continue;
     if (L.type === 'flush') {                                                   // 吸頂燈（示意）：ø40 × 8
       ell(L.x, L.y, 20, 20, top - 7, top, lightMat.rim, group);
@@ -2449,6 +2465,7 @@ function rebuild(cut) {
   buildCanopy(cut, dyn);
   buildBeams(cut, dyn);
   buildLights(cut, dyn);
+  if (ceilReady) buildCeilings();
   if (!kitchen.open) {                                                   // 廚房原始隔間：標出會因打通而移位的開關插座
     const plate = { power: new THREE.MeshStandardMaterial({ color: 0x0e7490, roughness: 0.4 }), switch: new THREE.MeshStandardMaterial({ color: 0xc0392b, roughness: 0.4 }) };
     for (const d of KITCHEN_WALL_DEVICES) {
@@ -2489,7 +2506,7 @@ for (const r of ROOMS) {
   addLabel(`${r.name}<small>${r.area.toFixed(1)} m²</small>`, lx, ly, r.out ? 'out' : '', r.id);
 }
 EXTRA_LABELS.forEach(l => addLabel(l.text, l.at[0], l.at[1], 'out'));
-for (const L of LIGHTS) fixLabel(`${LIGHT_NAME[L.type]}${L.sw ? ' ' + L.sw : ''}`, L.x, L.y, L.type === 'land' ? 90 : L.type === 'wall' ? 225 : WALL_H - 20, scene);
+for (const L of LIGHTS) fixLabel(`${LIGHT_NAME[L.type]}${L.sw ? ' ' + L.sw : ''}`, L.x, L.y, L.type === 'land' ? 90 : L.type === 'wall' ? 225 : (L.ceil ?? WALL_H) - 20, scene);
 
 // ---------- 面板 ----------
 const roomsEl = document.getElementById('rooms');
@@ -2852,20 +2869,27 @@ const WALK_SPEED = 1.0;     // 行走速度（m/s）：接近平常散步
 const STEP_LEN = 0.65;      // 一步的距離（m）：按一下、方向鍵、滾輪都只走一步
 const WALK_START = { x: 60, y: 410, yaw: 0 };   // 玄關大門內側，面向東（往餐廳）
 // 天花板：只在漫遊時顯示；每個室內空間（含牆下補片）往牆內延伸 7.6 cm，相鄰空間在牆體中間接起來，不留縫
+// 降板天花（廚房、浴室）用各自的高度（CEIL）；廚房打通時，在拆掉的牆位置補一道從降板到 WALL_H 的下垂封板
 const ceilGroup = new THREE.Group();
-{
-  // 天花板只受半球光的地面色照到，會偏暗灰；加一點自發光，接近實際白色天花板的亮度
-  const cm = new THREE.MeshStandardMaterial({ color: 0xf4f2ed, roughness: 0.95, emissive: 0x5c5a55 });
-  const E = 7.6;
-  const rects = [...ROOMS.filter(r => !r.out).flatMap(r => [r.rect, ...(r.extra || [])]), ...FLOOR_PATCHES.map(p => p.rect)];
-  for (const [x0, x1, y0, y1] of rects) {
-    const c = box(x0 - E, x1 + E, y0 - E, y1 + E, WALL_H, WALL_H + 1, cm, cm, ceilGroup);
-    c.castShadow = false;
-    c.userData.ceiling = true;
+// 天花板只受半球光的地面色照到，會偏暗灰；加一點自發光，接近實際白色天花板的亮度
+const ceilMat = new THREE.MeshStandardMaterial({ color: 0xf4f2ed, roughness: 0.95, emissive: 0x5c5a55 });
+function buildCeilings() {
+  for (const c of [...ceilGroup.children]) { ceilGroup.remove(c); c.geometry.dispose(); }
+  const E = 7.6, add = (x0, x1, y0, y1, h0, h1) => { const c = box(x0, x1, y0, y1, h0, h1, ceilMat, ceilMat, ceilGroup); if (c) { c.castShadow = false; c.userData.ceiling = true; } };
+  for (const r of ROOMS.filter(r => !r.out)) {
+    const ch = ceilH(r.id);
+    for (const [x0, x1, y0, y1] of [r.rect, ...(r.extra || [])]) add(x0 - E, x1 + E, y0 - E, y1 + E, ch, ch + 1);
   }
-  ceilGroup.visible = false;
-  scene.add(ceilGroup);
+  for (const [x0, x1, y0, y1] of FLOOR_PATCHES.map(p => p.rect)) add(x0 - E, x1 + E, y0 - E, y1 + E, WALL_H, WALL_H + 1);
+  if (kitchen.open && CEIL.kitchen < WALL_H) {
+    add(COUNTER_X1 - 0.3, hi('kE'), lo('kN'), hi('kN'), CEIL.kitchen, WALL_H + 1);           // 拆掉的廚房北牆上方
+    add(lo('kE'), hi('kE'), lo('kN'), FRIDGE_Y[0], CEIL.kitchen, WALL_H + 1);                  // 拆掉的廚房東牆北段上方
+  }
 }
+buildCeilings();
+ceilReady = true;
+ceilGroup.visible = false;
+scene.add(ceilGroup);
 const walk = { on: false, pos: new THREE.Vector3(), yaw: 0, pitch: 0, move: null, saved: null, drag: null, entryOpened: false, robeOpened: false };
 const walkBtn = document.getElementById('walk'), hintEl = document.getElementById('hint');
 const hintDefault = hintEl.textContent;
@@ -3129,6 +3153,55 @@ if (location.protocol === 'file:') {
     window.open(QUOTE_PAGE + '#' + encodeURIComponent(JSON.stringify(quoteMeasure())), '_blank');
   });
 }
+// ---------- 待確認數值：模型的假設值與圖面看不出來的尺寸，勾選狀態存在瀏覽器 ----------
+const MSG_CHECKS_SAVE_FAIL = '無法儲存待確認清單的勾選狀態（瀏覽器可能封鎖本機儲存）。';
+const CHECKS_KEY = 'a07f02-checks-v1';
+const CHECKS = [
+  { id: 'ceil', text: `室內淨高 ${WALL_H} cm`, note: '圖面沒有標示，全室天花板、吊櫃、衣櫃高度都以此為準' },
+  { id: 'ceil-kitchen', text: `廚房降板天花 ${CEIL.kitchen} cm`, note: '常見值；包排油煙管，影響廚房崁燈與吊櫃' },
+  { id: 'ceil-bath', text: `浴室降板天花 客浴 ${CEIL.gbath}、主浴 ${CEIL.mbath} cm`, note: '常見值；包暖風機與排風管' },
+  { id: 'beam', text: `樑底離地 ${BEAM_BOTTOM} cm（樑深暫定 ${WALL_H - BEAM_BOTTOM}）`, note: '影響電視牆吊櫃、洞洞板上緣；要看結構圖或現場量' },
+  { id: 'beam-east', text: '東側大樑是否凸出客廳、臥室一', note: '圖面虛線顯示凸出約 31～92 cm，影響吊櫃東端' },
+  { id: 'slab', text: `樓板厚 ${SLAB_T} cm`, note: '只影響牆頂外觀' },
+  { id: 'door-h', text: '室內門、大門高度 210 cm', note: '門片與門檻高度' },
+  { id: 'win', text: '主臥、臥室一東窗：窗台 60、窗頂 220 cm；客浴窗 110～210 cm', note: '依實品屋照片推估' },
+  { id: 'slide', text: '落地窗頂：客廳 255、餐廳往後陽台的鋁門 240 cm', note: '依實品屋照片推估' },
+  { id: 'entry-recess', text: `大門南側內凹約 ${Math.round(lo('entS') - OP.mainDoor[1])} cm、玄關櫃前段深 ${ENTRY_CAB.fd} cm`, note: '門片轉動時會不會碰到玄關櫃，現場量內凹深度' },
+  { id: 'robe', text: `主臥西牆可用長度約 ${Math.round(MB_S - OP.mbDoor[1])} cm；ELVARLI 立柱間距假設 82.5 cm`, note: '兩欄 80 cm 是否放得下；摺門片數與軌道規格請設計師確認' },
+  { id: 'switch-dbc', text: '廚房北牆開關組 d、b、c 的實際位置', note: '圖面圓點畫在離牆約 30 cm 處' },
+  { id: 'tv', text: `電視中心離地 ${TV.center} cm、電視背後出線 FL+90`, note: '依觀看距離與坐姿眼高推算' },
+  { id: 'milsbo', text: 'MILSBO 實際寬度：官網 73 cm、3D 模型 81.5 cm', note: '影響電視櫃左側到牆的距離' },
+  { id: 'sofa', text: 'STOCKHOLM 沙發深度：官網 88 cm、3D 模型約 94 cm；西端凸出牆角約 12～14 cm', note: '影響咖啡桌走道與走道入口寬度' },
+  { id: 'pdf', text: 'PDF 比例：以外牆校正 1 點 = 2.153 cm（圖面標示 1:60）', note: '圖面與現場約有 5～8 cm 差異，重要尺寸請現場丈量' },
+  { id: 'docs', text: '向建商或管委會索取水電配置圖、結構圖', note: '確認拆除的牆不是結構牆、樑位與樑深、管線走向' },
+];
+{
+  let done = {};
+  try { done = JSON.parse(localStorage.getItem(CHECKS_KEY) || '{}') || {}; } catch (err) { console.error(MSG_CHECKS_SAVE_FAIL, err); done = {}; }
+  if (typeof done !== 'object' || Array.isArray(done)) done = {};
+  const list = document.getElementById('check-list'), title = document.getElementById('check-title');
+  const refresh = () => { title.textContent = `待確認數值（${CHECKS.filter(c => done[c.id] === true).length}／${CHECKS.length}）`; };
+  for (const c of CHECKS) {
+    const li = document.createElement('li');
+    const lab = document.createElement('label');
+    const cb = document.createElement('input');
+    cb.type = 'checkbox'; cb.checked = done[c.id] === true;
+    li.classList.toggle('done', cb.checked);
+    const span = document.createElement('span');
+    span.innerHTML = `<b></b><small></small>`;
+    span.querySelector('b').textContent = c.text;
+    span.querySelector('small').textContent = c.note;
+    cb.addEventListener('change', () => {
+      done[c.id] = cb.checked;
+      li.classList.toggle('done', cb.checked);
+      refresh();
+      try { localStorage.setItem(CHECKS_KEY, JSON.stringify(done)); } catch (err) { console.error(MSG_CHECKS_SAVE_FAIL, err); }
+    });
+    lab.append(cb, span); li.append(lab); list.append(li);
+  }
+  refresh();
+}
+
 // ---------- 主題 ----------
 function applyTheme() {
   const c = getComputedStyle(document.documentElement).getPropertyValue('--scene').trim() || '#e3e8e5';
