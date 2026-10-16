@@ -1059,6 +1059,9 @@ const MB_N = hi('b1S'), MB_E = lo('mE');         // 主臥北牆內面 y（床�
 //   範圍：主臥西牆，從主浴門口（北端留 5 cm 給門框）做到南牆；ELVARLI 置中，兩端剩下的寬度由側板補滿
 //   區塊由北往南：雙層掛衣（襯衫＋褲子）、長掛衣（大衣、洋裝）
 //   門片：設計師訂做的滑軌摺門，doorCols 片落地到頂（上吊鋁軌），每 2 片一組可摺，整組可推到南側或北側任一邊
+// 主浴外牆朝主臥那一面（衣櫃靠的牆）原有的開關插座（客戶單元圖 PDF）：at＝平面 y（距主浴門口南緣約 21 cm）
+//   開關 f（主浴燈）與雙連插座都會被衣櫃蓋住，一起移到衣櫃北側側板外側（同高，開關在上、插座在下）
+const MB_WALL_DEVICES = { at: OP.mbDoor[1] + 20.5, outletH: 30, switchH: 120 };
 const WARDROBE = (() => {
   const y0 = OP.mbDoor[1] + 5, y1 = MB_S, post = 2.5, pitch = 82.5, side = 1.8, doorT = 2;
   const sections = [
@@ -1213,6 +1216,12 @@ function buildLayout(key) {
           box(fx1, fx1 + dw - 0.6, ya, ya + W.doorT, 1, top - 0.3, furnMat.door, furnMat.door, rg);
         }
       }
+    }
+    {
+      const D = MB_WALL_DEVICES, pw = new THREE.MeshStandardMaterial({ color: 0x0e7490, roughness: 0.4 }), sw = new THREE.MeshStandardMaterial({ color: 0xc0392b, roughness: 0.4 });
+      const sx = MB_W + 40;                                                                               // 衣櫃北側側板外側、靠前緣，從主浴門口伸手可及
+      box(sx - 4, sx + 4, W.y0 - 1.2, W.y0, D.switchH - 6, D.switchH + 6, sw, sw, rg);                     // 開關 f（主浴燈）
+      box(sx - 6, sx + 6, W.y0 - 1.2, W.y0, D.outletH - 4, D.outletH + 4, pw, pw, rg);                     // 雙連插座
     }
     rg.traverse(o => { if (o.isMesh) o.userData.robe = true; });
     g.add(rg);
@@ -3156,6 +3165,7 @@ function quoteMeasure() {
     layout: document.getElementById('sel-layout').value,
     entry: { front: r1(E.split - E.fx0), back: r1(E.bx1 - E.split), fd: E.fd, bd: E.bd, niche: E.niche[1] - E.niche[0], lift: E.lift },
     cabinet: { len: r1(cabLen), d: C.d, h0: BEAM_BOTTOM },
+    robeDevices: { fromDoor: Math.round(MB_WALL_DEVICES.at - OP.mbDoor[1]), outletH: MB_WALL_DEVICES.outletH, switchH: MB_WALL_DEVICES.switchH },
     robe: { len: Math.round(WARDROBE.len * 10) / 10, h: WARDROBE.h, posts: WARDROBE.sections.length + 1,
       shelves: WARDROBE.sections.reduce((s, x) => s + x.shelves.length, 0), rails: WARDROBE.sections.reduce((s, x) => s + x.rails.length, 0),
       panels: WARDROBE.doorCols },
