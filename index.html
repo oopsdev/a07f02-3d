@@ -244,6 +244,14 @@ input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px;
               <option value="q5">SLATTUM 150 置中（亮藍）</option>
             </select>
           </div>
+          <div class="field">
+            <label for="sel-robe">衣櫃顯示</label>
+            <select id="sel-robe">
+              <option value="closed">門片關閉</option>
+              <option value="north">門片收到北側（看內裝）</option>
+              <option value="south">門片收到南側（看內裝）</option>
+            </select>
+          </div>
         </div>
 
         <div class="grp">
@@ -346,8 +354,8 @@ input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px;
       <ul class="notes">
         <li><a href="https://www.ikea.com.tw/en/products/beds/bed-with-upholstered-headboard/slattum-art-80571270" target="_blank" rel="noopener">SLATTUM 軟墊床框 150×200</a>，Knisa 亮藍，外框 154 × 206，床頭板高 85</li>
         <li><a href="https://www.ikea.com.tw/en/products/beds/bed-with-upholstered-headboard/slattum-art-20571249" target="_blank" rel="noopener">SLATTUM 軟墊床框 180×200</a>，Vissle 深灰，外框 184 × 206，NT$6,999</li>
-        <li><a href="https://www.ikea.com.tw/en/products/wardrobes/system-wardrobes/pax-art-10355118" target="_blank" rel="noopener">PAX 衣櫃框架</a> 100 + 50 寬 × 58 × 236，白色（100 寬 NT$4,200）</li>
-        <li><a href="https://www.ikea.com.tw/en/products/wardrobes/system-wardrobes/fardal-spr-09004254" target="_blank" rel="noopener">FARDAL 門板 50×229</a> × 3，高光澤淺灰藍</li>
+        <li><a href="https://www.ikea.com.tw/en/products/wardrobes/open-storage-systems/elvarli-art-20296171" target="_blank" rel="noopener">ELVARLI 立柱 222-350</a> × 3，白色，頂天立地，每支 NT$1,100</li>
+        <li><a href="https://www.ikea.com.tw/en/products/wardrobes/open-storage-systems/elvarli-art-90296177" target="_blank" rel="noopener">ELVARLI 層板 80×51</a> × 5，白色，每片 NT$700；<a href="https://www.ikea.com.tw/en/products/wardrobes/open-storage-systems/elvarli-art-70296215" target="_blank" rel="noopener">掛衣桿 80</a> × 3，每支 NT$150；<a href="https://www.ikea.com.tw/en/products/wardrobes/open-storage-systems/elvarli-art-80296173" target="_blank" rel="noopener">立柱支架 51 cm</a>（2 入）× 8，每包 NT$250（門板與側板由設計師訂做）</li>
         <li><a href="https://www.ikea.com.tw/en/products/chests-and-other-furniture/bedside-tables/hattasen-art-60569980" target="_blank" rel="noopener">HATTÅSEN 床頭櫃</a> × 2，白色，27 × 43 × 58（兩層開放層架），每個 NT$599</li>
         <li><a href="https://www.ikea.com.tw/en/products/dining-tables/tables/norden-art-80423883" target="_blank" rel="noopener">NORDEN 摺疊桌</a>，樺木實木，26/89/152 × 80 × 74，附 6 個抽屜，NT$7,999</li>
         <li><a href="https://www.ikea.com.tw/zh/products/dining-seating/upholstered-chairs/ikea-ps-2026-art-30617968" target="_blank" rel="noopener">IKEA PS 2026 餐椅</a> × 2（宴客另備 4 張），亮綠色 Knäbäck 布套（可拆洗），44 × 55 × 76（座高 47），每張 NT$2,499</li>
@@ -1019,14 +1027,28 @@ const SOUTH_OUTLETS = [
 // 主臥擺法：床架 = 床墊 + 每側 3 cm，床頭板 8 cm；長度 196
 const MB_N = hi('b1S'), MB_E = lo('mE');         // 主臥北牆內面 y（床尾側）、東牆內面 x
 // IKEA 台灣官網尺寸：SLATTUM 150x200 外框 154 × 206、180x200 外框 184 × 206，床頭板高 85、床尾板高 40
-// 衣櫃：PAX 框架（100 + 50）× 58 × 236 + FARDAL 50x229 門板 → 150 × 60 × 236
-const WARDROBE = { depth: 60, len: 150, h: 236, doors: 3, name: 'PAX/FARDAL', sub: '150 × 60 × 236' };
+// 衣櫃：IKEA ELVARLI 開放式系統（立柱頂天立地 222～350、層板與掛衣桿 80 寬、深 51），外面由設計師訂做側板與門板
+//   範圍：主臥西牆，從主浴門口（北端留 5 cm 給門框）做到南牆；ELVARLI 置中，兩端剩下的寬度由側板補滿
+//   區塊由北往南：雙層掛衣（襯衫＋褲子）、長掛衣（大衣、洋裝）
+//   門片：設計師訂做的滑軌摺門，doorCols 片落地到頂（上吊鋁軌），每 2 片一組可摺，整組可推到南側或北側任一邊
+const WARDROBE = (() => {
+  const y0 = OP.mbDoor[1] + 5, y1 = MB_S, post = 2.5, pitch = 82.5, side = 1.8, doorT = 2;
+  const sections = [
+    { name: '雙層掛衣', rails: [105, 205], shelves: [215, 270] },
+    { name: '長掛衣', rails: [175], shelves: [185, 240, 290] },
+  ];
+  const elvW = sections.length * pitch + post;
+  return { y0, y1, len: y1 - y0, depth: 51, post, pitch, side, doorT, h: WALL_H, doorCols: 4,
+    elv0: y0 + side + (y1 - y0 - 2 * side - elvW) / 2, elvW, sections };
+})();
+let robeDoor = 'closed';           // 摺門：closed 關閉、north 收到北側、south 收到南側
+let robeLastSide = 'south';        // 鳥瞰點衣櫃時打開到上次的那一側
 const LAYOUTS = {
   q5: {
     name: 'SLATTUM 150×200', sub: 'Knisa 亮藍', w: 154, l: 206, mat: [150, 200],
     left: (170 + 350) / 2 - 77,                 // 置中於兩組插座
     frame: 0x2f6fd6, duvet: 0xf2efe6,
-    note: 'IKEA SLATTUM 150×200（Knisa 亮藍）置中於兩組插座之間，西牆放 PAX/FARDAL 衣櫃（淺灰藍門板）。IKEA 床長 206 cm，比台規長，床尾走道會變窄。',
+    note: 'IKEA SLATTUM 150×200（Knisa 亮藍）置中於兩組插座之間，西牆放 IKEA ELVARLI 衣櫃（外加設計師門板）。IKEA 床長 206 cm，比台規長，床尾走道會變窄。',
   },
   k6: {
     name: 'SLATTUM 180×200', sub: 'Vissle 深灰', w: 184, l: 206, mat: [180, 200],
@@ -1106,20 +1128,66 @@ function buildLayout(key) {
   gapLabel(`床尾 ${Math.round(y0 - MB_N)} cm`, cx, (MB_N + y0) / 2, g);
   gapLabel(`${Math.round(MB_E - x1)} cm`, (x1 + MB_E) / 2, y0 + 110, g);
   {
-    // PAX 白色框架 58 深 + FARDAL 淺灰藍門板 2 cm，靠西牆、從南牆角往北放
-    const W = WARDROBE, wy0 = MB_S - W.len, wx1 = MB_W + W.depth;
-    box(MB_W, wx1 - 2, wy0, MB_S, 0, W.h, furnMat.robe, furnMat.robeCap, g);
-    const dl = W.len / W.doors;
-    for (let i = 0; i < W.doors; i++) {
-      box(wx1 - 2, wx1, wy0 + i * dl + 0.4, wy0 + (i + 1) * dl - 0.4, 3, W.h - 4, furnMat.door, furnMat.door, g);
+    // ELVARLI 立柱靠牆、層板與掛衣桿深 51；設計師側板兩端各一片、門板在 ELVARLI 前方 0.5 cm
+    const W = WARDROBE, wx0 = MB_W + 0.3, ex1 = MB_W + W.depth, fx0 = ex1 + 0.5, fx1 = fx0 + W.doorT;
+    const rg = new THREE.Group(), white = furnMat.robe, st = mat.steel;
+    box(wx0, fx1, W.y0, W.y0 + W.side, 0, W.h - 0.3, white, furnMat.robeCap, rg);            // 北側板（到頂）
+    box(wx0, fx1, W.y1 - W.side, W.y1 - 0.3, 0, W.h - 0.3, white, furnMat.robeCap, rg);      // 南側板
+    for (let i = 0; i <= W.sections.length; i++) {                                         // ELVARLI 立柱（頂天立地）
+      const p = W.elv0 + i * W.pitch;
+      box(wx0 + 1, wx0 + 4, p, p + W.post, 0, W.h - 0.3, white, white, rg);
     }
-    gapLabel(`${Math.round(x0 - wx1)} cm`, (wx1 + x0) / 2, y0 + 110, g);
+    const cloth = [0xd8632a, 0x2f7f86, 0xe0a526, 0x3d4f8f, 0xc8402a, 0x6b8f3a];               // 示意衣物（跳色）
+    W.sections.forEach((sc, i) => {
+      const a = W.elv0 + i * W.pitch + W.post, b = W.elv0 + (i + 1) * W.pitch;
+      for (const sh of sc.shelves) {
+        box(wx0, ex1, a + 0.3, b - 0.3, sh, sh + 2.5, white, white, rg);                    // 層板 80×51
+        let k = 0;
+        for (let yy = a + 3; yy + 26 < b; yy += 27) {                                      // 摺疊衣物
+          const m = new THREE.MeshStandardMaterial({ color: cloth[(i * 3 + k++) % cloth.length], roughness: 0.9 });
+          box(wx0 + 8, wx0 + 40, yy, yy + 24, sh + 2.5, sh + 2.5 + 14, m, m, rg);
+        }
+      }
+      sc.rails.forEach((rh, j) => {
+        const rx = MB_W + W.depth / 2;
+        box(rx - 1, rx + 1, a + 0.5, b - 0.5, rh - 1, rh + 1, st, st, rg);                    // 掛衣桿 80
+        const len = sc.rails.length === 1 ? 110 : (j === 0 ? 62 : 78);                       // 長掛 110；雙層：下層褲子 62、上層襯衫 78
+        for (let yy = a + 6, k = 0; yy + 3 < b - 4; yy += 9, k++) {                          // 衣架上的衣服（垂直於掛衣桿）
+          const m = new THREE.MeshStandardMaterial({ color: cloth[(i + j * 2 + k) % cloth.length], roughness: 0.9 });
+          box(rx - 22, rx + 22, yy, yy + 3, rh - 3 - len, rh - 3, m, m, rg);
+        }
+      });
+    });
+    {
+      // 滑軌摺門：天花板下的上吊鋁軌、落地到頂的門片。關閉時門片排成一面；打開時摺起來疊在南側或北側
+      const ga = W.y0 + W.side, gb = W.y1 - W.side, dw = (gb - ga) / W.doorCols, top = W.h - 4;
+      box(fx0 - 0.5, fx1 + 2.5, ga, gb, top, W.h - 0.3, st, st, rg);                       // 上吊鋁軌
+      if (robeDoor === 'closed') {
+        for (let c = 0; c < W.doorCols; c++) {
+          const da = ga + c * dw + 0.2, db = da + dw - 0.4;
+          box(fx0, fx1, da, db, 1, top - 0.3, furnMat.door, furnMat.door, rg);
+          if (c % 2 === 1) box(fx1, fx1 + 1.5, da + 2, da + 4, 95, 125, st, st, rg);         // 把手：每組摺門在可推的那一片
+        }
+      } else {
+        // 摺起來：門片幾乎垂直於衣櫃正面，鋸齒狀疊在那一側的側板旁，伸出約一片門寬
+        const atS = robeDoor === 'south';
+        for (let c = 0; c < W.doorCols; c++) {
+          const ya = atS ? gb - 2.5 - c * 2.6 : ga + 0.3 + c * 2.6;
+          box(fx1, fx1 + dw - 0.6, ya, ya + W.doorT, 1, top - 0.3, furnMat.door, furnMat.door, rg);
+        }
+      }
+    }
+    rg.traverse(o => { if (o.isMesh) o.userData.robe = true; });
+    g.add(rg);
+    gapLabel(`${Math.round(x0 - fx1)} cm`, (fx1 + x0) / 2, y0 + 110, g);
     const wl = document.createElement('div');
     wl.className = 'lbl';
-    wl.innerHTML = `IKEA ${W.name}<small>淺灰藍 · ${W.sub}</small>`;
+    wl.innerHTML = `IKEA ELVARLI＋滑軌摺門<small>${Math.round(W.len)} × ${Math.round(fx1 - MB_W)} × ${W.h}（到頂）· 點一下開關</small>`;
     const wo = new CSS2DObject(wl);
-    { const [px, pz] = P((MB_W + wx1) / 2, (wy0 + MB_S) / 2); wo.position.set(px, 2.5, pz); }
+    { const [px, pz] = P((MB_W + fx1) / 2, (W.y0 + W.y1) / 2); wo.position.set(px, 2.5, pz); }
     g.add(wo);
+    const sr = document.getElementById('sel-robe');
+    if (sr) sr.value = robeDoor;
   }
   for (const at of L.proposed || []) {
     const x = MB_W + at;
@@ -2440,6 +2508,11 @@ setView('iso', true);
 
 // ---------- 控制項 ----------
 document.getElementById('sel-layout').addEventListener('change', e => buildLayout(e.target.value));
+document.getElementById('sel-robe').addEventListener('change', e => {
+  robeDoor = ['north', 'south'].includes(e.target.value) ? e.target.value : 'closed';
+  if (robeDoor !== 'closed') robeLastSide = robeDoor;
+  buildLayout(document.getElementById('sel-layout').value);
+});
 document.getElementById('sel-dining').addEventListener('change', e => buildDining(e.target.value));
 document.getElementById('sel-dloc').addEventListener('change', e => {
   diningLoc = e.target.value === 'fridge' ? 'fridge' : 'area';
@@ -2661,6 +2734,7 @@ renderer.domElement.addEventListener('pointerup', e => {
   ray.setFromCamera(ndc, camera);
   const hits = ray.intersectObjects([...floorMeshes.values(), ...extraFloors, ...dyn.children, ...(entryBackGroup ? entryBackGroup.children : [])], false);
   if (hits[0] && hits[0].object.userData.entryBack) { entryInterior = !entryInterior; buildEntryBack(); return; }   // 點玄關櫃後段：切換外觀／內裝
+  if (hits[0] && hits[0].object.userData.robe) { robeDoor = robeDoor === 'closed' ? robeLastSide : 'closed'; buildLayout(document.getElementById('sel-layout').value); return; }   // 點主臥衣櫃：摺門開關
   const hit = hits.find(h => h.object.userData.room);
   const first = hits[0];
   if (hit && first === hit) {
@@ -2692,7 +2766,7 @@ const ceilGroup = new THREE.Group();
   ceilGroup.visible = false;
   scene.add(ceilGroup);
 }
-const walk = { on: false, pos: new THREE.Vector3(), yaw: 0, pitch: 0, move: null, saved: null, drag: null, entryOpened: false };
+const walk = { on: false, pos: new THREE.Vector3(), yaw: 0, pitch: 0, move: null, saved: null, drag: null, entryOpened: false, robeOpened: false };
 const walkBtn = document.getElementById('walk'), hintEl = document.getElementById('hint');
 const hintDefault = hintEl.textContent;
 const walkRay = new THREE.Raycaster();
@@ -2765,6 +2839,7 @@ function enterWalk() {
 function exitWalk() {
   if (!walk.on) return;
   closeEntryInWalk();                                             // 離開漫遊時關上漫遊中打開的玄關櫃
+  closeRobeInWalk();
   touchPts.clear(); pinch = null;                                 // 清掉漫遊中的手指與縮放狀態（視角在下面還原）
   walk.on = false; walkActive = false; walk.move = null; walk.drag = null;
   ceilGroup.visible = false;
@@ -2822,6 +2897,16 @@ cv.addEventListener('pointerup', e => {
   ray.setFromCamera(ndc, camera);
   const hit = ray.intersectObjects(scene.children, true).find(h => h.object.isMesh && !h.object.isSprite && visibleChain(h.object) && !h.object.userData.ceiling);
   // 點玄關櫃後段：打開看內裝（再點一次關上）。用整個櫃子的外框判斷，打開後點到層板之間的空隙也算點到櫃子
+  if (hitsRobe(hit)) {                                               // 點主臥衣櫃：摺門推到另一側，露出點的那一半（再點一次關上）
+    if (walk.robeOpened) closeRobeInWalk();
+    else if (robeDoor === 'closed') {
+      const W = WARDROBE, py = robeHitPt.z * 100 + CZ;                  // 點到的平面 y
+      robeDoor = py > (W.y0 + W.y1) / 2 ? 'north' : 'south';
+      buildLayout(document.getElementById('sel-layout').value);
+      walk.robeOpened = true;
+    }
+    return;
+  }
   if (hitsEntryCabinet(hit)) {
     if (walk.entryOpened) closeEntryInWalk();
     else if (!entryInterior) { entryInterior = true; buildEntryBack(); walk.entryOpened = true; }
@@ -2864,6 +2949,28 @@ function hitsEntryCabinet(hit) {
   if (!hit || hit.object.userData.entryBack) return true;
   return hit.distance >= ray.ray.origin.distanceTo(entryHitPt) - 0.01;   // 櫃子外框比其他東西近（或一樣近）才算點到櫃子
 }
+const robeBox = new THREE.Box3(), robeHitPt = new THREE.Vector3(), robeProbe = new THREE.Vector3();
+function robeExtent() {
+  const W = WARDROBE, [ax, az] = P(MB_W, W.y0), [bx, bz] = P(MB_W + W.depth + 0.5 + W.doorT, W.y1);
+  robeBox.min.set(Math.min(ax, bx), 0, Math.min(az, bz));
+  robeBox.max.set(Math.max(ax, bx), M(W.h), Math.max(az, bz));
+  return robeBox;
+}
+function hitsRobe(hit) {
+  if (!ray.ray.intersectBox(robeExtent(), robeHitPt)) return false;
+  if (!hit || hit.object.userData.robe) return true;
+  return hit.distance >= ray.ray.origin.distanceTo(robeHitPt) - 0.01;
+}
+function closeRobeInWalk() {
+  if (!walk.robeOpened) return;
+  walk.robeOpened = false;
+  robeDoor = 'closed';
+  buildLayout(document.getElementById('sel-layout').value);
+}
+function robeInView() {
+  robeExtent().getCenter(robeProbe).project(camera);
+  return robeProbe.z < 1 && Math.abs(robeProbe.x) < 1 && Math.abs(robeProbe.y) < 1;
+}
 function entryInView() {
   const E = ENTRY_CAB, [px, pz] = P((E.split + E.bx1) / 2, E.wall - E.bd / 2);
   entryProbe.set(px, M(150), pz).project(camera);
@@ -2878,6 +2985,7 @@ function walkUpdate(now) {
   }
   walkCamera();
   if (walk.entryOpened && !entryInView()) closeEntryInWalk();
+  if (walk.robeOpened && !robeInView()) closeRobeInWalk();
 }
 
 // ---------- 估價清單（只在本機版）：本檔只匯出目前設定下的尺寸與數量，單價與估價單版面在本機的 A07F02_估價清單.html ----------
@@ -2901,6 +3009,9 @@ function quoteMeasure() {
     layout: document.getElementById('sel-layout').value,
     entry: { front: r1(E.split - E.fx0), back: r1(E.bx1 - E.split), fd: E.fd, bd: E.bd, niche: E.niche[1] - E.niche[0], lift: E.lift },
     cabinet: { len: r1(cabLen), d: C.d, h0: BEAM_BOTTOM },
+    robe: { len: Math.round(WARDROBE.len * 10) / 10, h: WARDROBE.h, posts: WARDROBE.sections.length + 1,
+      shelves: WARDROBE.sections.reduce((s, x) => s + x.shelves.length, 0), rails: WARDROBE.sections.reduce((s, x) => s + x.rails.length, 0),
+      panels: WARDROBE.doorCols },
     entryMat: { area: Math.round(ENTRY_MAT.rects.reduce((s, [a, b, c, d]) => s + (b - a) * (d - c), 0) / 100) / 100 },   // m²
     pegboards: [
       { name: '廚房北牆', w: r1(PEGBOARD.x1 - PEGBOARD.x0), h: PEGBOARD.h1 - PEGBOARD.h0 },
