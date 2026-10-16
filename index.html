@@ -392,7 +392,7 @@ input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px;
         <li><i style="background:#8e44ad"></i><span><b>紫色</b>電話、網路、電視出線，要移位（標在原位置）</span></li>
         <li><i style="background:#2e9d5b"></i><span><b>綠色</b>移位後的新位置（設計變更，與設計師確認）</span></li>
       </ul>
-      <p class="quote-hint">移位的項目會隨擺法改變：電視靠北牆時移電視出線、主臥放 180 床時移床頭插座；衣櫃蓋住的開關 f 與插座一律移到衣櫃北側側板。廚房打通時拆掉的牆上的開關插座，新位置待設計師決定，模型裡不畫。</p>
+      <p class="quote-hint">移位的項目會隨擺法改變：電視靠北牆時移電視出線、主臥放 180 床時移床頭插座、臥室一改玻璃隔間時移開關 h（離玻璃太近）；臥室一北牆插座在 FL+30，留在腰牆內不動（腰牆低於 42 cm 才要移）；衣櫃蓋住的開關 f 與插座一律移到衣櫃北側側板。廚房打通時拆掉的牆上的開關插座，新位置待設計師決定，模型裡不畫。</p>
     </section>
 
     <section class="sec" id="check-sec">
@@ -674,6 +674,7 @@ const mat = {
   joint:   new THREE.MeshStandardMaterial({ color: 0xb9c9cc, roughness: 0.3, transparent: true, opacity: 0.55, depthWrite: false }),  // 透明膠對接縫
   alu:     new THREE.MeshStandardMaterial({ color: 0x26282a, roughness: 0.45, metalness: 0.5 }),  // 黑色鋁門窗框
   steel:   new THREE.MeshStandardMaterial({ color: 0xc8ccce, roughness: 0.25, metalness: 0.9 }),  // 不鏽鋼夾具、把手
+  silver:  new THREE.MeshStandardMaterial({ color: 0xe3e6e8, roughness: 0.3, metalness: 0.55 }),  // 銀白色鋁 U 槽（無框玻璃上下框）
   frameWhite: new THREE.MeshStandardMaterial({ color: 0xf4f3f0, roughness: 0.5, metalness: 0.2 }),
   rail:    new THREE.MeshStandardMaterial({ color: 0x4a4f4d, roughness: 0.5, metalness: 0.6 }),
   planter: new THREE.MeshStandardMaterial({ color: 0xcdc6b9, roughness: 0.95 }),
@@ -1279,12 +1280,12 @@ function buildLayout(key) {
 // 臥室一北牆隔間：玻璃段只做在面向客廳的範圍（臥室一西牆內面 ~ 客廳東牆內面）
 // 臥室一西牆：走道側（北牆角 ~ 主臥門擋）整段改為玻璃，含臥室一門（503～590，玻璃門＋上方氣窗）；主臥玄關段維持實牆
 const PARTS = {
-  b1n: { vertical: false, fixed: WL.kN.c, from: hi('b1W'), to: lo('livE'), panels: 4 },
-  b1w: { vertical: true,  fixed: WL.b1W.c, from: hi('kN'), to: lo('mDoor'), panels: 1, sill: 0, door: { from: OP.b1Door[0], to: OP.b1Door[1], head: 210 } },
+  b1n: { vertical: false, fixed: WL.kN.c, t: WL.kN.t, from: hi('b1W'), to: lo('livE'), panels: 4 },
+  b1w: { vertical: true,  fixed: WL.b1W.c, t: WL.b1W.t, from: hi('kN'), to: lo('mDoor'), panels: 1, sill: 0, door: { from: OP.b1Door[0], to: OP.b1Door[1], head: 210 } },
 };
-// frame：none = 無框（超白玻璃、上下槽隱藏、玻璃對接）、black = 黑細框、white = 白框
+// frame：none = 無框（超白玻璃、上下銀白色 U 槽、玻璃對接）、black = 黑細框、white = 白框
 const FRAMES = {
-  none:  { name: '無框', desc: '超白玻璃 2 片對接，上下槽藏在天花板與腰牆內，接縫用透明膠' },
+  none:  { name: '無框', desc: '超白玻璃 2 片對接，上下銀白色鋁 U 槽，接縫用透明膠' },
   black: { name: '黑細框', desc: '黑色鋁框' },
   white: { name: '白框', desc: '白色鋁框，與牆面同色' },
 };
@@ -1344,6 +1345,12 @@ function buildPartitionFrame(cut, group) {
       : box(a, b, p.fixed - th / 2, p.fixed + th / 2, h0, h1, m, m, group);
     const n = panelsOf(p), step = (p.to - p.from) / n;
     if (none) {
+      const segs = p.door ? [[p.from, p.door.from], [p.door.to, p.to]] : [[p.from, p.to]];   // 下槽跳過門洞
+      for (const [a, b] of segs) {
+        if (wa > 0) bar(a, b, wa, wa + 0.6, p.t + 0.4, mat.silver);  // 腰牆頂銀白收邊（蓋住牆頂剖面色）
+        bar(a, b, wa, wa + 4, 3.5, mat.silver);                     // 下槽
+      }
+      if (cut >= WALL_H) bar(p.from, p.to, top - 4, top, 3.5, mat.silver);   // 上槽（天花板下）
       for (let i = 1; i < n; i++) {                               // 玻璃對接縫（透明膠）
         const s = p.from + step * i;
         bar(s - 0.3, s + 0.3, wa, top, 1.4, mat.joint);
@@ -1884,6 +1891,35 @@ function buildCeilingLights(group) {
       box(L.x - 5, L.x + 5, L.y - 5, L.y + 5, top - 3, top, lightMat.rim, lightMat.rim, group);
     }
   }
+}
+// 臥室一隔間牆上原有的開關插座（客戶單元圖 PDF 圓點位置）：改玻璃隔間時是否要移位由 b1DeviceMove 判斷
+//   wall：b1n＝臥室一北牆（at 為 x；face S＝臥室一側、N＝客廳側）、b1w＝臥室一西牆（at 為 y；face E＝臥室一側）
+const B1_WALL_DEVICES = [
+  { wall: 'b1n', face: 'S', at: 730.7, h: 30, kind: 'power',  name: '雙連插座（臥室一側）' },
+  { wall: 'b1n', face: 'S', at: 778.4, h: 30, kind: 'data',   name: '電話＋網路插座（臥室一側）' },
+  { wall: 'b1n', face: 'N', at: 682.0, h: 30, kind: 'data',   name: '電視＋網路插座（客廳側）' },
+  { wall: 'b1n', face: 'N', at: 729.3, h: 30, kind: 'power',  name: '緊急供電雙插座 ET（客廳側，電視用）' },
+  { wall: 'b1w', face: 'E', at: 611.5, h: 120, kind: 'switch', name: '單切開關 h（臥室一燈）' },
+];
+const DEV_CLEAR = 8;   // 面板邊到玻璃（含上下槽、端框）至少留 8 cm，否則要移位
+const devHalf = d => d.kind === 'switch' ? { w: 4, h: 6 } : { w: 6, h: 4 };   // 面板半寬（沿牆）、半高
+// 回傳 { moved, to }：to＝移位後沿牆的新位置；null＝不用移，或新位置待設計師決定
+function b1DeviceMove(d) {
+  if (partition.mode !== 'glass') return { moved: false, to: null };
+  const p = PARTS[d.wall], s = devHalf(d);
+  if (d.wall === 'b1n') {                                       // 北牆：玻璃在腰牆以上，插座要離下槽夠遠
+    const inGlass = partition.waist < WALL_H && d.at > p.from && d.at < p.to;
+    return { moved: inGlass && d.h + s.h + DEV_CLEAR > partition.waist, to: null };
+  }
+  // 西牆：走道段整段落地玻璃（p.from～p.to），開關在玻璃南端外的實牆上，離玻璃端太近就往南移
+  const near = d.at + s.w + DEV_CLEAR > p.from && d.at - s.w - DEV_CLEAR < p.to;
+  return { moved: near, to: near ? Math.ceil(p.to + DEV_CLEAR + s.w) : null };
+}
+function drawB1Device(d, at, m, group) {
+  const s = devHalf(d), h0 = d.h - s.h, h1 = d.h + s.h;
+  if (d.wall === 'b1w') box(hi('b1W'), hi('b1W') + 1.2, at - s.w, at + s.w, h0, h1, m, m, group);
+  else if (d.face === 'S') box(at - s.w, at + s.w, hi('kN'), hi('kN') + 1.2, h0, h1, m, m, group);
+  else box(at - s.w, at + s.w, lo('kN') - 1.2, lo('kN'), h0, h1, m, m, group);
 }
 // 廚房打通時會拆掉的牆面上，原有的開關與插座（客戶單元圖 PDF）：打通就要移位
 //   wall：kn＝廚房北牆（at 為 x，face 北＝餐廳側）、ke＝廚房東牆（at 為 y，face 東＝走道側）；gang＝開關切數
@@ -2556,6 +2592,12 @@ function rebuild(cut) {
   buildBeams(cut, dyn);
   buildLights(cut, dyn);
   if (ceilReady) buildCeilings();
+  for (const d of B1_WALL_DEVICES) {                                     // 臥室一隔間牆：不動＝白色；要移位＝原位上色、新位置綠色
+    if (d.h + devHalf(d).h > cut) continue;
+    const mv = b1DeviceMove(d);
+    drawB1Device(d, d.at, devMat(d.kind, mv.moved), dyn);
+    if (mv.to !== null) drawB1Device(d, mv.to, DEV_MAT.to, dyn);
+  }
   if (!kitchen.open) {                                                   // 廚房原始隔間：牆上原有開關插座不動（白色）；打通時隨牆拆除、新位置待設計師決定
     for (const d of KITCHEN_WALL_DEVICES) {
       if (d.h + 4 > cut) continue;
@@ -3227,6 +3269,7 @@ function quoteMeasure() {
     glass: partition.mode === 'glass' && partition.waist < WALL_H,
     bed1: { waist: partition.waist, glassType: partition.glassType, frame: FRAMES[partition.frame].name,
       nLen: r1(n.to - n.from), wLen: r1(w.to - w.from), doorW: r1(d.to - d.from), doorH: d.head, fixW: r1(w.to - d.to) },
+    bed1Devices: B1_WALL_DEVICES.map(d => { const mv = b1DeviceMove(d); return { name: d.name, kind: d.kind, h: d.h, moved: mv.moved, shift: mv.to === null ? 0 : Math.round(mv.to - d.at) }; }),
     tvNorth: living.swap,
     tvWall: { tvCx: Math.round(TV.cx - hi('livW')), ctv: LIVING_N_OUTLETS[1].at, power: [LIVING_N_OUTLETS[0].at, LIVING_N_OUTLETS[3].at] },
     layout: document.getElementById('sel-layout').value,
