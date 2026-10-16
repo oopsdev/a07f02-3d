@@ -1444,7 +1444,8 @@ function buildTV() {
 //   guest：北端維持靠牆不動、兩片桌板掀起往南延伸到 152，每側 3 張椅子
 // 長邊南北向、偏東放，西側留走道通往後陽台門（252～343）與玄關；廚房開口在南側
 // 餐椅：IKEA PS 2026（亮綠色/Knäbäck 亮綠色，44 × 55 × 76，座寬 38、座深 38、座高 47，軟墊座面與靠背，實木漆腳）
-const DINING = { cx: 430, w: 80, h: 74, body: 26, leaf: 63, wall: hi('dinN'), guestCy: 365, chairW: 44, chairD: 55, chairH: 76, seat: 47, tuck: 10 };
+const DINING = { cx: 430, w: 80, h: 74, body: 26, leaf: 63, wall: hi('dinN'), guestCy: 365, chairW: 44, chairD: 55, chairH: 76, seat: 47, tuck: 10, tuckIn: 39 };
+// tuck：宴客時椅子只推進桌下 10 cm（中段有抽屜桌身擋住）；tuckIn：平日把椅子推進桌下，兩側椅子前緣在桌子中線前各留約 1 cm，椅背只露出桌緣約 16 cm，走道不卡
 const diningMat = {
   birch: new THREE.MeshStandardMaterial({ color: 0xe3c9a0, roughness: 0.55 }),
   green: new THREE.MeshStandardMaterial({ color: 0x3da94f, roughness: 0.9 }),   // Knäbäck 亮綠色布套
@@ -1510,7 +1511,8 @@ function buildDining(mode) {
       box(bx - 1.2, bx + 1.2, ly - 1.2, ly + 1.2, D.seat, D.seat + 8, leg, leg, g);        // 靠背支架
     }
   };
-  const wx = tx0 - D.chairD / 2 + D.tuck, ex = tx1 + D.chairD / 2 - D.tuck;
+  const tuck = guest ? D.tuck : D.tuckIn;                          // 平日椅子收進桌下
+  const wx = tx0 - D.chairD / 2 + tuck, ex = tx1 + D.chairD / 2 - tuck;
   const len = ty1 - ty0;
   const seatsY = guest
     ? [1, 3, 5].map(k => ty0 + len * k / 6)
@@ -2052,10 +2054,10 @@ function buildBeams(cut, group) {
 //   swing：門往哪一側開（H 牆 +1＝南、-1＝北；V 牆 +1＝東、-1＝西）；t：牆厚；w：門洞寬；head：門高
 const DOORS = [
   { name: '大門',     wall: 'V', fixed: WL.entW.c,  hinge: OP.mainDoor[0], dir: 1,  w: OP.mainDoor[1] - OP.mainDoor[0], swing: 1,  t: WL.entW.t,  head: 210, color: 0x3b3f42 },
-  { name: '客浴門',   wall: 'H', fixed: WL.entN.c,  hinge: OP.gbDoor[1],   dir: -1, w: OP.gbDoor[1] - OP.gbDoor[0],     swing: -1, t: WL.entN.t,  head: 210 },
-  { name: '主浴門',   wall: 'V', fixed: WL.mbW.c,   hinge: OP.mbDoor[0],   dir: 1,  w: OP.mbDoor[1] - OP.mbDoor[0],     swing: -1, t: WL.mbW.t,   head: 210 },
-  { name: '臥室一門', wall: 'V', fixed: WL.b1W.c,   hinge: OP.b1Door[0],   dir: 1,  w: OP.b1Door[1] - OP.b1Door[0],     swing: 1,  t: WL.b1W.t,   head: 210, glassPart: true },   // 玻璃隔間時改成玻璃門片
-  { name: '主臥門',   wall: 'H', fixed: WL.mDoor.c, hinge: OP.mDoor[0],    dir: 1,  w: OP.mDoor[1] - OP.mDoor[0],       swing: 1,  t: WL.mDoor.t, head: 210 },
+  { name: '客浴門',   wall: 'H', fixed: WL.entN.c,  hinge: OP.gbDoor[1],   dir: -1, w: OP.gbDoor[1] - OP.gbDoor[0],     swing: -1, t: WL.entN.t,  head: 210, wood: true, vents: true },
+  { name: '主浴門',   wall: 'V', fixed: WL.mbW.c,   hinge: OP.mbDoor[0],   dir: 1,  w: OP.mbDoor[1] - OP.mbDoor[0],     swing: -1, t: WL.mbW.t,   head: 210, wood: true, vents: true },
+  { name: '臥室一門', wall: 'V', fixed: WL.b1W.c,   hinge: OP.b1Door[0],   dir: 1,  w: OP.b1Door[1] - OP.b1Door[0],     swing: 1,  t: WL.b1W.t,   head: 210, glassPart: true, wood: true },   // 實牆時木皮門片，玻璃隔間時改成玻璃門片
+  { name: '主臥門',   wall: 'H', fixed: WL.mDoor.c, hinge: OP.mDoor[0],    dir: 1,  w: OP.mDoor[1] - OP.mDoor[0],       swing: 1,  t: WL.mDoor.t, head: 210, wood: true },
   // 後陽台鋁門（實品屋：單扇鋁框玻璃門）：鉸鏈在西側，往後陽台開，開到底門片靠在客浴東牆朝陽台的那一面（PDF 開門弧線相同）
   { name: '後陽台門', wall: 'H', fixed: WL.dinN.c,  hinge: OP.dinDoor[0],  dir: 1,  w: OP.dinDoor[1] - OP.dinDoor[0],   swing: -1, t: WL.dinN.t,  head: 240, sill: 8, alu: true },
 ];
@@ -2065,8 +2067,38 @@ const DOOR_T = 4;             // 門片厚度（cm）
 const doorGroup = new THREE.Group();
 {
   const leafMat = new THREE.MeshStandardMaterial({ color: 0xece7de, roughness: 0.6 });
+  // 木皮門片（實品屋照片：中等色調橡木木皮、直向木紋）：程式產生的木紋貼圖，一張貼滿整片門
+  const woodTex = (() => {
+    const c = document.createElement('canvas');
+    c.width = 256; c.height = 1024;
+    const x = c.getContext('2d');
+    x.fillStyle = '#b88a5a'; x.fillRect(0, 0, 256, 1024);
+    let seed = 7;
+    const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+    for (let k = 0; k < 90; k++) {                                         // 直向木紋：深淺不一、略帶波動的細線
+      const x0 = rnd() * 256, w = 0.6 + rnd() * 2.4, dark = rnd() < 0.6;
+      x.strokeStyle = dark ? `rgba(110,72,40,${0.12 + rnd() * 0.3})` : `rgba(226,190,140,${0.1 + rnd() * 0.25})`;
+      x.lineWidth = w;
+      x.beginPath();
+      const amp = 1 + rnd() * 5, freq = 0.004 + rnd() * 0.01, ph = rnd() * 6.3;
+      for (let yv = 0; yv <= 1024; yv += 16) {
+        const xv = x0 + Math.sin(yv * freq + ph) * amp;
+        yv === 0 ? x.moveTo(xv, yv) : x.lineTo(xv, yv);
+      }
+      x.stroke();
+    }
+    for (let k = 0; k < 14; k++) {                                         // 橡木的橫向射線紋（短淺色斑）
+      x.fillStyle = `rgba(235,205,160,${0.15 + rnd() * 0.2})`;
+      x.fillRect(rnd() * 256, rnd() * 1024, 4 + rnd() * 10, 1 + rnd() * 2);
+    }
+    const t = new THREE.CanvasTexture(c);
+    t.colorSpace = THREE.SRGBColorSpace;
+    return t;
+  })();
+  const woodMat = new THREE.MeshStandardMaterial({ map: woodTex, roughness: 0.55 });
+  const ventMat = new THREE.MeshStandardMaterial({ color: 0x2b2420, roughness: 0.8 });
   for (const d of DOORS) {
-    const m = d.color ? new THREE.MeshStandardMaterial({ color: d.color, roughness: 0.5, metalness: 0.2 }) : leafMat;
+    const m = d.color ? new THREE.MeshStandardMaterial({ color: d.color, roughness: 0.5, metalness: 0.2 }) : d.wood ? woodMat : leafMat;
     const HO = DOOR_T / 2 + 0.5;                                           // 鉸鏈離門框：讓出門片半厚，開到 90° 時門片貼牆不穿進牆裡
     const base = (d.sill ?? 0) + 0.5;                                      // 門片底（門檻上方）
     const W = d.w - HO - 0.75, H = d.head - (d.sill ?? 0) - 1;             // 門片比門洞略小（門縫）
@@ -2089,6 +2121,9 @@ const doorGroup = new THREE.Group();
       part(W - 2 * F, H - 2 * F, 1, 0, base + H / 2, mat.glass);
     } else {
       slab = part(W, H, DOOR_T, 0, base + H / 2, m);
+      if (d.vents) {                                                       // 衛浴門下方通風格縫：4 條橫向縫，兩面都看得到
+        for (let k = 0; k < 4; k++) part(W - 24, 1.6, DOOR_T + 0.2, 0, base + 12 + k * 4, ventMat);
+      }
     }
     for (const s of [-1, 1]) {                                             // 把手：門片自由端、離地 100，兩面各一支
       const hd = new THREE.Mesh(new THREE.BoxGeometry(M(12), M(2), M(2)), mat.steel);
