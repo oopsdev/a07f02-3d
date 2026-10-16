@@ -2794,7 +2794,8 @@ cv.addEventListener('pointerup', e => {
   ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
   ray.setFromCamera(ndc, camera);
   const hit = ray.intersectObjects(scene.children, true).find(h => h.object.isMesh && !h.object.isSprite && visibleChain(h.object) && !h.object.userData.ceiling);
-  if (hit && hit.object.userData.entryBack) {                       // 點玄關櫃後段：打開看內裝（再點一次關上）
+  // 點玄關櫃後段：打開看內裝（再點一次關上）。用整個櫃子的外框判斷，打開後點到層板之間的空隙也算點到櫃子
+  if (hitsEntryCabinet(hit)) {
     if (walk.entryOpened) closeEntryInWalk();
     else if (!entryInterior) { entryInterior = true; buildEntryBack(); walk.entryOpened = true; }
     return;
@@ -2826,6 +2827,15 @@ function closeEntryInWalk() {
   walk.entryOpened = false;
   entryInterior = false;
   buildEntryBack();
+}
+const entryBox = new THREE.Box3(), entryHitPt = new THREE.Vector3();
+function hitsEntryCabinet(hit) {
+  const E = ENTRY_CAB, [ax, az] = P(E.split, E.wall - E.bd), [bx, bz] = P(E.bx1, E.wall);
+  entryBox.min.set(Math.min(ax, bx), 0, Math.min(az, bz));
+  entryBox.max.set(Math.max(ax, bx), M(E.bh), Math.max(az, bz));
+  if (!ray.ray.intersectBox(entryBox, entryHitPt)) return false;
+  if (!hit || hit.object.userData.entryBack) return true;
+  return hit.distance >= ray.ray.origin.distanceTo(entryHitPt) - 0.01;   // 櫃子外框比其他東西近（或一樣近）才算點到櫃子
 }
 function entryInView() {
   const E = ENTRY_CAB, [px, pz] = P((E.split + E.bx1) / 2, E.wall - E.bd / 2);
