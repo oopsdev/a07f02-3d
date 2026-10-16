@@ -1867,7 +1867,7 @@ const ENTRY_BACK = { hangW: 60, hangTop: 240, hangBottom: 100, shoeLevels: [1.8,
 
 // 玄關櫃後段（x 131.6～227.9，長約 96、深 45、到天花板）：可切換「外觀」（關門）與「內裝」（拿掉門片）
 //   上櫃與下櫃層板橫跨整個櫃寬（不分區）；只有中櫃有中隔板：吊掛區（側拉掛衣桿，掛一件完整外套示意）＋層板區（摺疊衣物）
-// 玄關小銅錢 PVC 地墊（深灰、凸起圓點防滑，厚 0.4 cm）：鋪滿玄關淨空間，延伸到前段鞋櫃的懸空處下面，停在後段落地櫃正面
+// 玄關小銅錢 PVC 地墊（淺灰、凸起圓點防滑，厚 0.4 cm）：鋪滿玄關淨空間，延伸到前段鞋櫃的懸空處下面，停在後段落地櫃正面
 // rects：[x0, x1, y0, y1]（cm），由玄關牆面與玄關櫃尺寸推算
 const ENTRY_MAT = (() => {
   const E = ENTRY_CAB, x0 = hi('entW') + 0.3, x1 = lo('gbE') - 0.3, y0 = hi('entN') + 0.3, back = E.wall - E.bd;
@@ -1876,10 +1876,10 @@ const ENTRY_MAT = (() => {
 {
   const c = document.createElement('canvas'); c.width = 128; c.height = 128;   // 一張貼圖代表 6 × 6 cm，4 顆圓點
   const x = c.getContext('2d');
-  x.fillStyle = '#3a3d3f'; x.fillRect(0, 0, 128, 128);
+  x.fillStyle = '#b4b8ba'; x.fillRect(0, 0, 128, 128);
   for (const [cx, cy] of [[32, 32], [96, 32], [32, 96], [96, 96]]) {
     const g = x.createRadialGradient(cx - 6, cy - 6, 2, cx, cy, 22);
-    g.addColorStop(0, '#5a5e61'); g.addColorStop(0.75, '#45494b'); g.addColorStop(1, '#2c2f31');
+    g.addColorStop(0, '#d6d9da'); g.addColorStop(0.75, '#bfc3c5'); g.addColorStop(1, '#94989a');   // 圓點受光面較亮、邊緣有一圈陰影
     x.fillStyle = g; x.beginPath(); x.arc(cx, cy, 20, 0, Math.PI * 2); x.fill();
   }
   const grp = new THREE.Group();
@@ -1887,7 +1887,7 @@ const ENTRY_MAT = (() => {
     const tex = new THREE.CanvasTexture(c);
     tex.wrapS = tex.wrapT = THREE.RepeatWrapping; tex.colorSpace = THREE.SRGBColorSpace;
     tex.repeat.set((x1 - x0) / 6, (y1 - y0) / 6);
-    const top = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.8 }), edge = new THREE.MeshStandardMaterial({ color: 0x2c2f31, roughness: 0.8 });
+    const top = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.8 }), edge = new THREE.MeshStandardMaterial({ color: 0xa3a7a9, roughness: 0.8 });
     const m = box(x0, x1, y0, y1, 0, ENTRY_MAT.t, edge, top, grp);
     m.castShadow = false;
     m.userData.floor = true; m.userData.room = 'entry';                   // 漫遊時可踩、鳥瞰時點它也算選到玄關
