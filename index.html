@@ -1006,6 +1006,13 @@ if (IKEA_SRC && typeof IKEA_SRC === 'object' && Object.keys(IKEA_SRC).length) {
 
 // 主臥：南牆插座（依 PDF 換算，距離從主臥西牆面 MB_W 起算）與 5 尺雙人床
 const MB_W = hi('mbW'), MB_S = lo('south');     // 主臥西牆內面 x、南牆內面 y
+// 客廳北牆原有插座（依客戶單元圖 PDF，距客廳西牆面）：雙連插座 ×2、電視＋網路、電話＋網路，都是 FL+30
+const LIVING_N_OUTLETS = [
+  { at: 33, h: 30, kind: 'power', name: '雙連插座' },
+  { at: 80, h: 30, kind: 'data', name: '電視＋網路插座' },
+  { at: 279, h: 30, kind: 'data', name: '電話＋網路插座' },
+  { at: 326, h: 30, kind: 'power', name: '雙連插座' },
+];
 const SOUTH_OUTLETS = [
   { at: 120, h: 30, kind: 'data' },             // 電話＋網路
   { at: 170, h: 30, kind: 'power' },            // 雙連插座
@@ -1022,6 +1029,10 @@ const SOUTH_OUTLETS = [
   for (const o of SOUTH_OUTLETS) {
     const x = MB_W + o.at;
     box(x - 6, x + 6, MB_S - 1.2, MB_S, o.h - 4, o.h + 4, plate[o.kind]);
+  }
+  for (const o of LIVING_N_OUTLETS) {                                     // 客廳北牆原有插座（貼在北牆內面）
+    const x = hi('livW') + o.at;
+    box(x - 6, x + 6, hi('livN'), hi('livN') + 1.2, o.h - 4, o.h + 4, plate[o.kind]);
   }
 }
 
@@ -1452,6 +1463,10 @@ function buildTV() {
       box(fx - 1.2, fx + 1.2, face + 0.5, back - 0.5, B.h + 1.5, h0 + 6, tvMat.body, tvMat.body, g);     // 腳柱插入機身
     }
   }
+  if (swap) {                                                             // 建議移位：電視＋網路與一組電源移到電視背後（客廳中軸、FL+90），綠色
+    const yb = hi('livN');
+    for (const dx of [-14, 14]) boxRaw(TV.cx + dx - 6, TV.cx + dx + 6, yb, yb + 1, 86, 94, furnMat.ghost, furnMat.ghost, g);
+  }
   box(x0, x1, face, back, h0, h1, tvMat.body, tvMat.body, g);
   const scr = box(x0 + 1.5, x1 - 1.5, face - 0.3, face, h0 + 1.5, h1 - 1.5, tvMat.screen, tvMat.screen, g);
   scr.castShadow = false;
@@ -1516,7 +1531,7 @@ function buildTV() {
     `<li>尺寸 ${TV.w} × ${TV.h} cm；螢幕中心離地 <b>${Math.round(center)} cm</b>，下緣 ${Math.round(h0)} cm、上緣 ${Math.round(h1)} cm。</li>` +
     `<li>坐姿眼高約 ${TV.eyeH} cm，觀看距離約 ${dist} cm（${(dist / TV.diag).toFixed(1)} 倍對角線），視線${angleTxt}，在舒適範圍（±10° 以內）。</li>` +
     (swap
-      ? `<li>電視壁掛於客廳北牆（外牆），下方放 IKEA BESTÅ 電視櫃（180 × 42 × 39，櫃面到電視下緣約 ${Math.round(h0 - BENCH.h)} cm），上方做木作吊櫃（牆到牆 ${Math.round(CARPCAB.x1 - CARPCAB.x0)} cm、深 ${CARPCAB.d} cm，高度：${BEAM_BOTTOM}～${WALL_H} 公分，櫃底切齊樑的下緣、做到天花板包覆上方管線，櫃底距電視上緣約 ${Math.round(BEAM_BOTTOM - h1)} cm；東端做到東側大樑的側面為止），沙發靠臥室一牆。原圖電視與網路插座在臥室一牆，互換後要在北牆新拉電源、電視與網路線到電視背後約 FL+90 cm；臥室一牆的原插座可改給沙發旁的落地燈、手機充電使用。</li>` +
+      ? `<li>電視壁掛於客廳北牆（外牆），下方放 IKEA BESTÅ 電視櫃（180 × 42 × 39，櫃面到電視下緣約 ${Math.round(h0 - BENCH.h)} cm），上方做木作吊櫃（牆到牆 ${Math.round(CARPCAB.x1 - CARPCAB.x0)} cm、深 ${CARPCAB.d} cm，高度：${BEAM_BOTTOM}～${WALL_H} 公分，櫃底切齊樑的下緣、做到天花板包覆上方管線，櫃底距電視上緣約 ${Math.round(BEAM_BOTTOM - h1)} cm；東端做到東側大樑的側面為止），沙發靠臥室一牆。原圖北牆已有電視＋網路插座（距客廳西牆約 ${LIVING_N_OUTLETS[1].at} cm）與雙連插座（約 ${LIVING_N_OUTLETS[0].at}、${LIVING_N_OUTLETS[3].at} cm），都在 FL+30，但不在電視正後方（電視中心距西牆約 ${Math.round(TV.cx - hi('livW'))} cm）；建議把電視＋網路出線與一組電源移到電視背後約 FL+90 cm（綠色），臥室一牆的原插座可改給沙發旁的落地燈、手機充電使用。</li>` +
         (partition.mode === 'glass' && partition.waist < WALL_H ? `<li>沙發靠背高 80 cm，${partition.waist >= 80 ? '低於' : '高於'}腰牆 ${partition.waist} cm${partition.waist >= 80 ? '，從臥室一看出去不會被沙發擋到' : '，沙發靠背會露在玻璃前'}。</li>` : '')
       : glass
         ? `<li>上方為玻璃無法壁掛，以電視原廠雙腳（腳高約 ${TV.foot} cm，左右各內縮 ${TV.footInset} cm）直接立在 IKEA BESTÅ 電視櫃（180 × 42 × 39，白色/胡桃木紋門板）上。</li>`
@@ -3016,6 +3031,7 @@ function quoteMeasure() {
     bed1: { waist: partition.waist, glassType: partition.glassType, frame: FRAMES[partition.frame].name,
       nLen: r1(n.to - n.from), wLen: r1(w.to - w.from), doorW: r1(d.to - d.from), doorH: d.head, fixW: r1(w.to - d.to) },
     tvNorth: living.swap,
+    tvWall: { tvCx: Math.round(TV.cx - hi('livW')), ctv: LIVING_N_OUTLETS[1].at, power: [LIVING_N_OUTLETS[0].at, LIVING_N_OUTLETS[3].at] },
     layout: document.getElementById('sel-layout').value,
     entry: { front: r1(E.split - E.fx0), back: r1(E.bx1 - E.split), fd: E.fd, bd: E.bd, niche: E.niche[1] - E.niche[0], lift: E.lift },
     cabinet: { len: r1(cabLen), d: C.d, h0: BEAM_BOTTOM },
