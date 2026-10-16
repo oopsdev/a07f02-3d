@@ -1757,6 +1757,13 @@ function fixLabel(html, x, y, h, g) {
 
 // 廚房隔間：open = 北牆只留遮住流理台的西段（到流理台東緣 COUNTER_X1）、東牆從冰箱北端（FRIDGE_Y[0]）保留到南端，遮住冰箱與電器櫃
 const kitchen = { open: true };   // 預設：打通（留冰箱與電器櫃牆）
+// 廚房打通時會拆掉的牆面上，原有的開關與插座（客戶單元圖 PDF）：打通就要移位
+//   wall：kn＝廚房北牆（at 為 x，face 北＝餐廳側）、ke＝廚房東牆（at 為 y，face 東＝走道側）；gang＝開關切數
+const KITCHEN_WALL_DEVICES = [
+  { wall: 'ke', at: 506, h: 120, kind: 'switch', gang: 1, name: '單切開關（走道平頂燈 m）', place: '廚房東牆北段（走道側）' },
+  { wall: 'kn', at: 469, h: 30, kind: 'power', gang: 0, name: '雙連插座', place: '廚房北牆東段（餐廳側）' },
+  { wall: 'kn', at: 469, h: 120, kind: 'switch', gang: 3, name: '開關組 d、b、c（單切 ×2＋三路，餐廳／客廳燈）', place: '廚房北牆東段（餐廳側）', note: '圖面圓點畫在離牆約 30 cm 處，需現場確認' },
+];
 function kitchenWall(w) {
   if (!kitchen.open) return w;
   if (w.id === 'kn') return { ...w, b: [COUNTER_X1 - w.t / 2, WL.kN.c], open: [] };   // 牆端（含外延）停在流理台東緣
@@ -2384,6 +2391,15 @@ function rebuild(cut) {
   buildPartitionFrame(cut, dyn);
   buildCanopy(cut, dyn);
   buildBeams(cut, dyn);
+  if (!kitchen.open) {                                                   // 廚房原始隔間：標出會因打通而移位的開關插座
+    const plate = { power: new THREE.MeshStandardMaterial({ color: 0x0e7490, roughness: 0.4 }), switch: new THREE.MeshStandardMaterial({ color: 0xc0392b, roughness: 0.4 }) };
+    for (const d of KITCHEN_WALL_DEVICES) {
+      if (d.h + 4 > cut) continue;
+      const m = plate[d.kind], w = d.gang > 1 ? 8 : 6;
+      if (d.wall === 'kn') box(d.at - w, d.at + w, lo('kN') - 1.2, lo('kN'), d.h - 4, d.h + 4, m, m, dyn);
+      else box(hi('kE'), hi('kE') + 1.2, d.at - w, d.at + w, d.h - 4, d.h + 4, m, m, dyn);
+    }
+  }
   PARAPETS.forEach(w => w.rail ? buildRail(w, cut, dyn) : buildWall(w, cut, dyn, { h: 110, side: mat.para, t: w.t ?? 12 }));
   // 內縮 0.6 cm、略低 0.5 cm，避免與外牆面共平面造成 z-fighting 閃爍
   SHAFTS.forEach(([x0, x1, y0, y1, outdoor]) => {
@@ -3026,6 +3042,7 @@ function quoteMeasure() {
     wallH: WALL_H,
     indoorArea: Math.round(ROOMS.filter(r => !r.out).reduce((s, r) => s + r.area, 0) * 100) / 100,   // m²
     kitchenOpen: kitchen.open,
+    kitchenDevices: KITCHEN_WALL_DEVICES.map(d => ({ name: d.name, place: d.place, h: d.h, kind: d.kind, gang: d.gang, note: d.note || '' })),
     kitchen: { knLen: r1(lo('kE') - COUNTER_X1), openW: r1(OP.kOpen[1] - OP.kOpen[0]), openH: 230, keLen: r1(FRIDGE_Y[0] - hi('kN')) },
     glass: partition.mode === 'glass' && partition.waist < WALL_H,
     bed1: { waist: partition.waist, glassType: partition.glassType, frame: FRAMES[partition.frame].name,
