@@ -1757,6 +1757,63 @@ function fixLabel(html, x, y, h, g) {
 
 // 廚房隔間：open = 北牆只留遮住流理台的西段（到流理台東緣 COUNTER_X1）、東牆從冰箱北端（FRIDGE_Y[0]）保留到南端，遮住冰箱與電器櫃
 const kitchen = { open: true };   // 預設：打通（留冰箱與電器櫃牆）
+// 燈具位置（客戶單元圖 PDF 的燈具符號）：sw＝對應開關的字母
+//   type：flush＝平頂燈出線口（示意為吸頂燈）、recess＝崁燈出線口、balcony＝陽台吸頂燈、outlet＝燈具／預留電動曬衣架出線、
+//         wall＝陽台壁燈（face：裝在哪道牆面的 x，朝東）、land＝景觀燈（花台內，往上照）
+const LIGHTS = [
+  { type: 'flush',   sw: 'a', room: '玄關',   x: 123.1, y: 430.3 },
+  { type: 'flush',   sw: 'b', room: '餐廳',   x: 440.1, y: 309.3 },
+  { type: 'flush',   sw: 'c', room: '客廳',   x: 686.9, y: 342.1 },
+  { type: 'flush',   sw: 'm', room: '走道',   x: 542.7, y: 545.5 },
+  { type: 'flush',   sw: 'h', room: '臥室一', x: 744.8, y: 576.0 },
+  { type: 'flush',   sw: 'i', room: '主臥',   x: 611.2, y: 826.6 },
+  { type: 'recess',  sw: 'd', room: '廚房',   x: 363.4, y: 664.3 },
+  { type: 'recess',  sw: 'g', room: '客浴',   x: 169.9, y: 261.5 },
+  { type: 'recess',  sw: 'f', room: '主浴',   x: 351.3, y: 782.4 },
+  { type: 'balcony', sw: 'e', room: '後陽台', x: 357.7, y: 128.7, out: true },
+  { type: 'outlet',  sw: '',  room: '後陽台', x: 326.0, y: 212.7, out: true },
+  { type: 'wall',    sw: 'j', room: '陽台',   x: hi('livE'), y: 284.0, out: true },
+  { type: 'wall',    sw: '',  room: '側廊',   x: hi('b1E'), y: 701.0, out: true },
+  { type: 'land',    sw: 'k', room: '陽台花台', x: 1082.4, y: 311.1, out: true },
+  { type: 'land',    sw: 'k', room: '露台花台', x: 1086.3, y: 786.5, out: true },
+];
+const LIGHT_NAME = { flush: '平頂燈', recess: '崁燈', balcony: '陽台吸頂燈', outlet: '燈具／曬衣架出線', wall: '陽台壁燈', land: '景觀燈' };
+const lightMat = {
+  glow: new THREE.MeshStandardMaterial({ color: 0xfffaf0, emissive: 0xfff1d6, emissiveIntensity: 0.9, roughness: 0.4 }),
+  rim:  new THREE.MeshStandardMaterial({ color: 0xe9e7e2, roughness: 0.5 }),
+  dark: new THREE.MeshStandardMaterial({ color: 0x3a3d3f, roughness: 0.5, metalness: 0.3 }),
+};
+// 燈具畫在天花板下（WALL_H），漫遊時抬頭看得到；剖切高度低於燈具就不畫
+function buildLights(cut, group) {
+  for (const L of LIGHTS) {
+    if (L.type === 'land') {                                                    // 景觀燈：花台頂（60）上的投射燈
+      if (cut < 70) continue;
+      ell(L.x, L.y, 4, 4, 60, 66, lightMat.dark, group);
+      ell(L.x, L.y, 3, 3, 66, 66.6, lightMat.glow, group);
+      continue;
+    }
+    if (L.type === 'wall') {                                                    // 陽台壁燈：外牆面上、離地 200
+      if (cut < 215) continue;
+      box(L.x, L.x + 8, L.y - 6, L.y + 6, 194, 212, lightMat.dark, lightMat.dark, group);
+      box(L.x + 8, L.x + 8.6, L.y - 4.5, L.y + 4.5, 197, 209, lightMat.glow, lightMat.glow, group);
+      continue;
+    }
+    const top = WALL_H - 0.3;
+    if (cut < top) continue;
+    if (L.type === 'flush') {                                                   // 吸頂燈（示意）：ø40 × 8
+      ell(L.x, L.y, 20, 20, top - 7, top, lightMat.rim, group);
+      ell(L.x, L.y, 17, 17, top - 8, top - 7, lightMat.glow, group);
+    } else if (L.type === 'balcony') {                                          // 陽台吸頂燈：ø28 × 7
+      ell(L.x, L.y, 14, 14, top - 6, top, lightMat.rim, group);
+      ell(L.x, L.y, 12, 12, top - 7, top - 6, lightMat.glow, group);
+    } else if (L.type === 'recess') {                                           // 崁燈：ø12，幾乎與天花板齊平
+      ell(L.x, L.y, 7, 7, top - 1, top, lightMat.rim, group);
+      ell(L.x, L.y, 5, 5, top - 1.4, top - 1, lightMat.glow, group);
+    } else {                                                                    // 出線口：小方盒
+      box(L.x - 5, L.x + 5, L.y - 5, L.y + 5, top - 3, top, lightMat.rim, lightMat.rim, group);
+    }
+  }
+}
 // 廚房打通時會拆掉的牆面上，原有的開關與插座（客戶單元圖 PDF）：打通就要移位
 //   wall：kn＝廚房北牆（at 為 x，face 北＝餐廳側）、ke＝廚房東牆（at 為 y，face 東＝走道側）；gang＝開關切數
 const KITCHEN_WALL_DEVICES = [
@@ -2391,6 +2448,7 @@ function rebuild(cut) {
   buildPartitionFrame(cut, dyn);
   buildCanopy(cut, dyn);
   buildBeams(cut, dyn);
+  buildLights(cut, dyn);
   if (!kitchen.open) {                                                   // 廚房原始隔間：標出會因打通而移位的開關插座
     const plate = { power: new THREE.MeshStandardMaterial({ color: 0x0e7490, roughness: 0.4 }), switch: new THREE.MeshStandardMaterial({ color: 0xc0392b, roughness: 0.4 }) };
     for (const d of KITCHEN_WALL_DEVICES) {
@@ -2431,6 +2489,7 @@ for (const r of ROOMS) {
   addLabel(`${r.name}<small>${r.area.toFixed(1)} m²</small>`, lx, ly, r.out ? 'out' : '', r.id);
 }
 EXTRA_LABELS.forEach(l => addLabel(l.text, l.at[0], l.at[1], 'out'));
+for (const L of LIGHTS) fixLabel(`${LIGHT_NAME[L.type]}${L.sw ? ' ' + L.sw : ''}`, L.x, L.y, L.type === 'land' ? 90 : L.type === 'wall' ? 225 : WALL_H - 20, scene);
 
 // ---------- 面板 ----------
 const roomsEl = document.getElementById('rooms');
@@ -3041,6 +3100,7 @@ function quoteMeasure() {
     v: 1,
     wallH: WALL_H,
     indoorArea: Math.round(ROOMS.filter(r => !r.out).reduce((s, r) => s + r.area, 0) * 100) / 100,   // m²
+    lights: { indoor: LIGHTS.filter(L => !L.out).map(L => ({ type: LIGHT_NAME[L.type], room: L.room, sw: L.sw })) },
     kitchenOpen: kitchen.open,
     kitchenDevices: KITCHEN_WALL_DEVICES.map(d => ({ name: d.name, place: d.place, h: d.h, kind: d.kind, gang: d.gang, note: d.note || '' })),
     kitchen: { knLen: r1(lo('kE') - COUNTER_X1), openW: r1(OP.kOpen[1] - OP.kOpen[0]), openH: 230, keLen: r1(FRIDGE_Y[0] - hi('kN')) },
