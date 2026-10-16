@@ -1776,7 +1776,7 @@ function fixLabel(html, x, y, h, g) {
 const kitchen = { open: true };   // 預設：打通（留冰箱與電器櫃牆）
 // 燈具位置（客戶單元圖 PDF 的燈具符號）：sw＝對應開關的字母
 //   type：flush＝平頂燈出線口（示意為吸頂燈）、recess＝崁燈出線口、balcony＝陽台吸頂燈、outlet＝燈具／預留電動曬衣架出線、
-//         wall＝陽台壁燈（face：裝在哪道牆面的 x，朝東）、land＝景觀燈（花台內，往上照）
+//         wall＝陽台壁燈（x、y 為牆面上的位置，dir：燈朝向 E 或 S）、land＝景觀燈（花台內，往上照）
 const LIGHTS = [
   { type: 'flush',   sw: 'a', room: '玄關',   x: 123.1, y: 430.3 },
   { type: 'flush',   sw: 'b', room: '餐廳',   x: 440.1, y: 309.3 },
@@ -1789,8 +1789,8 @@ const LIGHTS = [
   { type: 'recess',  sw: 'f', room: '主浴',   x: 351.3, y: 782.4, ceil: ceilH('mbath') },
   { type: 'balcony', sw: 'e', room: '後陽台', x: 357.7, y: 128.7, out: true },
   { type: 'outlet',  sw: '',  room: '後陽台', x: 326.0, y: 212.7, out: true },
-  { type: 'wall',    sw: 'j', room: '陽台',   x: hi('livE'), y: 284.0, out: true },
-  { type: 'wall',    sw: '',  room: '側廊',   x: hi('b1E'), y: 701.0, out: true },
+  { type: 'wall',    sw: 'j', room: '陽台',   x: 929.4, y: COL.ne[3], dir: 'S', out: true },   // 東北角柱朝南的面（PDF 符號畫在柱南方約 41 cm）；避開客廳落地窗
+  { type: 'wall',    sw: '',  room: '側廊',   x: hi('b1E'), y: 701.0, dir: 'E', out: true },    // 臥室一東外牆、窗戶南側
   { type: 'land',    sw: 'k', room: '陽台花台', x: 1082.4, y: 311.1, out: true },
   { type: 'land',    sw: 'k', room: '露台花台', x: 1086.3, y: 786.5, out: true },
 ];
@@ -1814,8 +1814,13 @@ function buildLights(cut, group) {
     }
     if (L.type === 'wall') {                                                    // 陽台壁燈：外牆面上、離地 200
       if (cut < 215) continue;
-      box(L.x, L.x + 8, L.y - 6, L.y + 6, 194, 212, lightMat.dark, lightMat.dark, group);
-      box(L.x + 8, L.x + 8.6, L.y - 4.5, L.y + 4.5, 197, 209, lightMat.glow, lightMat.glow, group);
+      if (L.dir === 'S') {                                                      // 裝在朝南的牆面上
+        box(L.x - 6, L.x + 6, L.y, L.y + 8, 194, 212, lightMat.dark, lightMat.dark, group);
+        box(L.x - 4.5, L.x + 4.5, L.y + 8, L.y + 8.6, 197, 209, lightMat.glow, lightMat.glow, group);
+      } else {                                                                  // 裝在朝東的牆面上
+        box(L.x, L.x + 8, L.y - 6, L.y + 6, 194, 212, lightMat.dark, lightMat.dark, group);
+        box(L.x + 8, L.x + 8.6, L.y - 4.5, L.y + 4.5, 197, 209, lightMat.glow, lightMat.glow, group);
+      }
       continue;
     }
   }
