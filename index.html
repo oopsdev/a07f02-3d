@@ -1696,6 +1696,7 @@ function fixLabel(html, x, y, h, g) {
   const [px, pz] = P(x, y);
   o.position.set(px, M(h), pz);
   g.add(o);
+  return o;
 }
 {
   const g = new THREE.Group(), F = FIX, st = mat.steel;
@@ -1799,9 +1800,12 @@ const lightMat = {
   rim:  new THREE.MeshStandardMaterial({ color: 0xe9e7e2, roughness: 0.5 }),
   dark: new THREE.MeshStandardMaterial({ color: 0x3a3d3f, roughness: 0.5, metalness: 0.3 }),
 };
-// 燈具畫在天花板下（WALL_H），漫遊時抬頭看得到；剖切高度低於燈具就不畫
+// 天花板上的燈（平頂燈、崁燈、陽台吸頂燈、出線口）跟天花板一樣只在室內漫遊時顯示（畫在 ceilGroup）；
+// 壁燈與景觀燈不在天花板上，一直顯示（畫在 dyn，隨剖切高度）
+const CEIL_LIGHT = new Set(['flush', 'recess', 'balcony', 'outlet']);
 function buildLights(cut, group) {
   for (const L of LIGHTS) {
+    if (CEIL_LIGHT.has(L.type)) continue;
     if (L.type === 'land') {                                                    // 景觀燈：花台頂（60）上的投射燈
       if (cut < 70) continue;
       ell(L.x, L.y, 4, 4, 60, 66, lightMat.dark, group);
@@ -1814,8 +1818,12 @@ function buildLights(cut, group) {
       box(L.x + 8, L.x + 8.6, L.y - 4.5, L.y + 4.5, 197, 209, lightMat.glow, lightMat.glow, group);
       continue;
     }
+  }
+}
+function buildCeilingLights(group) {
+  for (const L of LIGHTS) {
+    if (!CEIL_LIGHT.has(L.type)) continue;
     const top = (L.ceil ?? WALL_H) - 0.3;
-    if (cut < top) continue;
     if (L.type === 'flush') {                                                   // 吸頂燈（示意）：ø40 × 8
       ell(L.x, L.y, 20, 20, top - 7, top, lightMat.rim, group);
       ell(L.x, L.y, 17, 17, top - 8, top - 7, lightMat.glow, group);
@@ -2506,7 +2514,11 @@ for (const r of ROOMS) {
   addLabel(`${r.name}<small>${r.area.toFixed(1)} m²</small>`, lx, ly, r.out ? 'out' : '', r.id);
 }
 EXTRA_LABELS.forEach(l => addLabel(l.text, l.at[0], l.at[1], 'out'));
-for (const L of LIGHTS) fixLabel(`${LIGHT_NAME[L.type]}${L.sw ? ' ' + L.sw : ''}`, L.x, L.y, L.type === 'land' ? 90 : L.type === 'wall' ? 225 : (L.ceil ?? WALL_H) - 20, scene);
+const ceilLightLabels = [];
+for (const L of LIGHTS) {
+  const o = fixLabel(`${LIGHT_NAME[L.type]}${L.sw ? ' ' + L.sw : ''}`, L.x, L.y, L.type === 'land' ? 90 : L.type === 'wall' ? 225 : (L.ceil ?? WALL_H) - 20, scene);
+  if (CEIL_LIGHT.has(L.type)) { o.visible = false; ceilLightLabels.push(o); }
+}
 
 // ---------- 面板 ----------
 const roomsEl = document.getElementById('rooms');
@@ -2881,6 +2893,7 @@ function buildCeilings() {
     for (const [x0, x1, y0, y1] of [r.rect, ...(r.extra || [])]) add(x0 - E, x1 + E, y0 - E, y1 + E, ch, ch + 1);
   }
   for (const [x0, x1, y0, y1] of FLOOR_PATCHES.map(p => p.rect)) add(x0 - E, x1 + E, y0 - E, y1 + E, WALL_H, WALL_H + 1);
+  buildCeilingLights(ceilGroup);
   if (kitchen.open && CEIL.kitchen < WALL_H) {
     add(COUNTER_X1 - 0.3, hi('kE'), lo('kN'), hi('kN'), CEIL.kitchen, WALL_H + 1);           // 拆掉的廚房北牆上方
     add(lo('kE'), hi('kE'), lo('kN'), FRIDGE_Y[0], CEIL.kitchen, WALL_H + 1);                  // 拆掉的廚房東牆北段上方
@@ -2956,6 +2969,7 @@ function enterWalk() {
   camera.fov = WALK_FOV; camera.updateProjectionMatrix();
   rebuild(WALL_TOP);            // 漫遊時牆一律完整高度（rebuild 內也會依 walkActive 強制）
   ceilGroup.visible = true;
+  for (const o of ceilLightLabels) o.visible = true;
   walkBtn.textContent = '離開室內'; walkBtn.setAttribute('aria-pressed', 'true');
   hintEl.textContent = MSG_WALK_HINT;
   walkCamera();
@@ -2967,6 +2981,7 @@ function exitWalk() {
   touchPts.clear(); pinch = null;                                 // 清掉漫遊中的手指與縮放狀態（視角在下面還原）
   walk.on = false; walkActive = false; walk.move = null; walk.drag = null;
   ceilGroup.visible = false;
+  for (const o of ceilLightLabels) o.visible = false;
   camera.fov = walk.saved.fov; camera.updateProjectionMatrix();
   camera.position.copy(walk.saved.pos); controls.target.copy(walk.saved.tgt);
   controls.enabled = true;
