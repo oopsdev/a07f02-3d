@@ -1620,8 +1620,8 @@ function buildTV() {
 }
 
 // 餐廳：IKEA PINNTORP 摺疊桌（松木，桌面淺棕色染色、腳架染白）67/124 × 75 × 75，桌身 67 + 一片 57 cm 活動板（gateleg）
-//   daily：活動板放下垂在桌身南端，桌身靠北牆（餐廳北牆內面），長 67，2 張椅子面對面
-//   guest：桌身靠牆不動、活動板掀起往南延伸到 124，每側 2 張椅子（南端可再加 1 張）
+//   daily：活動板放下垂在北牆與桌身之間（不佔走道），桌身靠北牆（餐廳北牆內面），長 67，2 張椅子面對面
+//   guest：活動板掀起在牆側、整張桌子往南移 57，長 124，每側 2 張椅子（南端可再加 1 張）；冰箱旁同理，活動板收在冰箱那一側
 // 長邊南北向、偏東放，西側留走道通往後陽台門（252～343）與玄關；廚房開口在南側
 // 餐椅：IKEA PS 2026（亮綠色/Knäbäck 亮綠色，44 × 55 × 76，座寬 38、座深 38、座高 47，軟墊座面與靠背，實木漆腳）
 const DINING = { cx: 430, w: 75, h: 75, body: 67, leaf: 57, wall: hi('dinN'), chairW: 44, chairD: 55, chairH: 76, seat: 47, tuck: 10, tuckIn: 36 };
@@ -1633,10 +1633,11 @@ const PENDANT = (() => {
   const outlet = { x: 440.1, y: 309.3 }, x = DINING.cx, cord = 150, shadeH = 26, target = 150, offset = Math.abs(outlet.x - x);
   const reachSwag = WALL_H - (cord - offset) - shadeH, reachDirect = WALL_H - cord - shadeH;   // 兩種吊法電線放到最長時的燈罩底離地
   const method = reachSwag <= target + 5 ? 'swag' : 'direct';
-  const bottom = Math.round(Math.max(target, method === 'swag' ? reachSwag : reachDirect));
+  const reach = method === 'swag' ? reachSwag : reachDirect;          // 選定吊法電線放到最長時的燈罩底離地
+  const bottom = Math.round(Math.max(target, reach));                  // 電線夠長就縮短到 target
   return { name: 'VÄXJÖ', finish: '米色烤漆鋁', price: 999, dia: 38, shadeH, cord, maxW: 22, target, x, y: outlet.y, outlet, offset, outletSide: outlet.x >= x ? 'E' : 'W',
-    method, bottom, reachSwag: Math.round(reachSwag), reachDirect: Math.round(reachDirect),
-    profile: [[1, 0.25], [0.95, 0.2], [0.82, 0.2], [0.6, 0.2], [0.32, 0.15]] };   // 燈罩輪廓（由下往上：半徑比例、高度比例）
+    method, bottom, reach: Math.round(reach), reachSwag: Math.round(reachSwag), reachDirect: Math.round(reachDirect),
+    profile: [[1, .125], [.985, .125], [.955, .125], [.905, .125], [.835, .125], [.74, .125], [.61, .125], [.42, .125]] };   // 燈罩輪廓（由下往上：半徑比例、高度比例，近似圓頂）
 })();
 // tuck：宴客時椅子只推進桌下 10 cm；tuckIn：平日把椅子推進桌下，兩側椅子前緣在桌子中線前各留約 1.5 cm，椅背只露出桌緣約 19 cm，走道不卡
 const diningMat = {
@@ -1660,27 +1661,28 @@ function buildDining(mode) {
   const tableModel = !guest && useModel('pinntorp');               // 模型是活動板放下的狀態（67 × 75），延伸 124 用方塊
   const cx = atFridge ? FRIDGE_X1 - D.w / 2 : D.cx;                 // 冰箱旁：桌身與冰箱東緣對齊
   const tx0 = cx - D.w / 2, tx1 = cx + D.w / 2;
-  // 沿 y 方向的桌段 [ty0, ty1]、桌身 [bodyY0, bodyY1]；活動板在桌身遠離牆（或冰箱）的那一端，leafDir：活動板朝 +1 南／-1 北
+  // 沿 y 方向的桌段 [ty0, ty1]、桌身 [bodyY0, bodyY1]；活動板在桌身靠牆（或靠冰箱）的那一端，摺起時垂在牆（冰箱）與桌身之間，不佔走道
+  // leafDir：活動板朝 +1 南（冰箱旁）／-1 北（靠牆）；掀起時整張桌子往另一邊移 D.leaf
   let ty0, ty1, bodyY0, bodyY1, leafDir;
   if (atFridge) {
-    bodyY1 = FRIDGE_N - 2.5; bodyY0 = bodyY1 - D.body; leafDir = -1;   // 桌身貼冰箱北側，活動板朝北
-    ty1 = bodyY1; ty0 = guest ? bodyY0 - D.leaf : bodyY0;
+    leafDir = 1; ty1 = FRIDGE_N - 2.5;                                 // 活動板貼冰箱北側
+    bodyY1 = guest ? ty1 - D.leaf : ty1; bodyY0 = bodyY1 - D.body; ty0 = bodyY0;
   } else {
-    bodyY0 = D.wall + 2.5; bodyY1 = bodyY0 + D.body; leafDir = 1;      // 桌身靠北牆，活動板朝南
-    ty0 = bodyY0; ty1 = guest ? bodyY1 + D.leaf : bodyY1;
+    leafDir = -1; ty0 = D.wall + 2.5;                                  // 活動板貼北牆
+    bodyY0 = guest ? ty0 + D.leaf : ty0; bodyY1 = bodyY0 + D.body; ty1 = bodyY1;
   }
   if (tableModel) {
-    // PINNTORP 模型：垂下的活動板在模型 +X 端；靠牆時朝南（rot -90°）、冰箱旁朝北（rot +90°）
-    placeModel('pinntorp', g, { x: cx, y: atFridge ? [FRIDGE_N - 0.3, -1] : [D.wall + 0.3, 1], rot: atFridge ? Math.PI / 2 : -Math.PI / 2 });
+    // PINNTORP 模型：垂下的活動板在模型 +X 端；靠牆時朝北貼牆（rot +90°）、冰箱旁朝南貼冰箱（rot -90°）；外緣離牆／冰箱 0.3，桌身與方塊版同位置
+    placeModel('pinntorp', g, { x: cx, y: atFridge ? [FRIDGE_N - 0.3, -1] : [D.wall + 0.3, 1], rot: atFridge ? -Math.PI / 2 : Math.PI / 2 });
   } else {
     box(tx0, tx1, ty0, ty1, D.h - 3, D.h, top, top, g);                                             // 桌面（含掀起的活動板）
     box(tx0 + 5, tx1 - 5, bodyY0 + 5, bodyY1 - 5, D.h - 10, D.h - 3, frame, frame, g);              // 底框
     for (const ly of [bodyY0 + 2, bodyY1 - 6]) for (const lx of [tx0 + 2, tx1 - 6]) box(lx, lx + 4, ly, ly + 4, 0, D.h - 3, frame, frame, g);   // 四支桌腳
-    if (guest) {                                                                                    // 撐腳（gateleg）：活動板外端下方
+    if (guest) {                                                                                    // 撐腳（gateleg）：活動板外端（牆／冰箱側）下方
       const ly = leafDir > 0 ? ty1 - 10 : ty0 + 6;
       for (const lx of [tx0 + 12, tx1 - 16]) box(lx, lx + 4, ly, ly + 4, 0, D.h - 3, frame, frame, g);
-    } else {                                                                                        // 活動板放下：垂在桌身末端
-      const ly = leafDir > 0 ? bodyY1 + 0.3 : bodyY0 - 2.5;
+    } else {                                                                                        // 活動板放下：垂在牆（冰箱）與桌身之間
+      const ly = leafDir > 0 ? FRIDGE_N - 2.5 : D.wall + 0.3;
       box(tx0 + 1, tx1 - 1, ly, ly + 2.2, D.h - 3 - D.leaf, D.h - 3, top, top, g);
     }
   }
@@ -1730,18 +1732,20 @@ function buildDining(mode) {
   document.getElementById('sel-dloc').value = diningLoc;
   updateSummary();
   document.getElementById('dining-note').textContent = atFridge && guest
-    ? `桌身貼冰箱北側不動，活動板掀起往北延伸到 124 cm，每側 2 張椅子共 4 人。西側椅背到流理台剩約 ${Math.round(back - COUNTER_X1)} cm，東側椅子伸進餐廳與走道，走道剩約 ${Math.round(lo('b1W') - eback)} cm。`
+    ? `活動板掀起貼在冰箱北側、桌身往北移 57 cm，桌長 124 cm，每側 2 張椅子共 4 人；北端還可加 1 張椅子坐第 5 人。西側椅背到流理台剩約 ${Math.round(back - COUNTER_X1)} cm，東側椅子伸進餐廳與走道，走道剩約 ${Math.round(lo('b1W') - eback)} cm。`
     : atFridge
-    ? `桌子放在冰箱旁：桌身貼冰箱北側、活動板放下垂在北端，桌長 67 cm，2 張椅子東西面對面。西側椅背到流理台剩約 ${Math.round(back - COUNTER_X1)} cm 廚房走道，東側椅子伸進走道，走道剩約 ${Math.round(lo('b1W') - eback)} cm。餐廳整區空出來。`
+    ? `桌子放在冰箱旁：活動板放下垂在冰箱與桌身之間（不佔走道），桌長 67 cm 朝北，2 張椅子東西面對面。西側椅背到流理台剩約 ${Math.round(back - COUNTER_X1)} cm 廚房走道，東側椅子伸進走道，走道剩約 ${Math.round(lo('b1W') - eback)} cm。餐廳整區空出來。`
     : guest
-    ? `桌身靠北牆不動，活動板掀起往南延伸到 124 cm，每側 2 張椅子共 4 人；南端還可加 1 張椅子坐第 5 人。南側到廚房開口留約 ${Math.round(lo('kN') - ty1)} cm，西側走道維持 ${Math.round(back - hi('gbE'))} cm。`
-    : `活動板放下垂在南端，桌長 67 cm，桌身靠北牆，2 張椅子面對面。南側留出約 ${Math.round(lo('kN') - ty1)} cm 的空地。`;
+    ? `活動板掀起貼在北牆側、桌身往南移 57 cm，桌長 124 cm，每側 2 張椅子共 4 人；南端還可加 1 張椅子坐第 5 人。南側到廚房開口留約 ${Math.round(lo('kN') - ty1)} cm，西側走道維持 ${Math.round(back - hi('gbE'))} cm。`
+    : `活動板放下垂在北牆與桌身之間（不佔走道），桌長 67 cm，2 張椅子面對面。南側留出約 ${Math.round(lo('kN') - ty1)} cm 的空地。`;
   { const Pd = PENDANT, side = Pd.outletSide === 'E' ? '東' : '西';
     const hang = Pd.method === 'swag' ? `原出線口在吊點${side}側 ${Math.round(Pd.offset)} cm 不動，電線沿天花板到掛鉤再垂下` : `原出線口在吊點${side}側 ${Math.round(Pd.offset)} cm，出線沿天花板延伸到吊點、天花板座裝在吊點（電線 ${Pd.cord} cm 不夠繞掛鉤）`;
     const high = Pd.bottom > Pd.target ? `（比目標 ${Pd.target} 高，想再低要加長電線）` : '';
+    const cordTxt = Pd.reach < Pd.target ? '電線縮短到' : '電線放到最長時';
+    const over = Math.round(Pd.y + Pd.dia / 2 - bodyY1);                     // 摺起時燈罩南緣超出桌身南端
     document.getElementById('dining-note').textContent += atFridge
       ? ` 餐廳吊燈（IKEA ${Pd.name} ø${Pd.dia}）留在餐桌中線上方的吊點，不在冰箱旁的桌子上方；燈罩底離地約 ${Pd.bottom} cm 會碰頭，桌子常放冰箱旁的話吊燈要縮短電線或一併移位。`
-      : ` 桌子上方吊 IKEA ${Pd.name} 吊燈（ø${Pd.dia}）：吊點在桌子中線正上方、距北牆內面 ${Math.round(Pd.y - D.wall)} cm，${guest ? '約在延伸後桌面的中心' : `在摺起桌面的南段（距桌心約 ${Math.round(Pd.y - (bodyY0 + bodyY1) / 2)} cm）`}；${hang}；電線放到最長時燈罩底離地約 ${Pd.bottom}、離桌面約 ${Pd.bottom - D.h} cm${high}。`; }
+      : ` 桌子上方吊 IKEA ${Pd.name} 吊燈（ø${Pd.dia}）：吊點在桌子中線正上方、距北牆內面 ${Math.round(Pd.y - D.wall)} cm，${guest ? '約在延伸後桌面的中心' : `在摺起桌面的南段（距桌心約 ${Math.round(Pd.y - (bodyY0 + bodyY1) / 2)} cm${over > 0 ? `，燈罩南緣超出桌面約 ${over} cm` : ''}）`}；${hang}；${cordTxt}燈罩底離地約 ${Pd.bottom}、離桌面約 ${Pd.bottom - D.h} cm${high}。`; }
 }
 
 // 原圖配備（建商）：廚具、電器櫃、冰箱位、兩間浴室的馬桶／洗手台／淋浴間
@@ -1896,7 +1900,7 @@ function buildLights(cut, group) {
         h0 = h1;
       }
       ell(Pd.x, Pd.y, Pd.dia / 2 - 1.5, Pd.dia / 2 - 1.5, b - 0.4, b, lightMat.glow, group);                // 燈罩底的光
-      if (hi1 > t + 5) ell(Pd.x, Pd.y, 0.4, 0.4, t, hi1 - 3, lightMat.dark, group);                        // 垂下的電線
+      if (hi1 > t + 5) ell(Pd.x, Pd.y, 0.4, 0.4, t, hi1 - 2.4, lightMat.dark, group);                      // 垂下的電線（頂端接到天花板座或掛鉤）
       if (cut >= top) {
         if (Pd.method === 'swag') {
           ell(Pd.x, Pd.y, 1.5, 1.5, top - 3, top, DEV_MAT.to, group);                                        // 掛鉤（新位置）
@@ -3322,7 +3326,7 @@ function quoteMeasure() {
     indoorArea: Math.round(ROOMS.filter(r => !r.out).reduce((s, r) => s + r.area, 0) * 100) / 100,   // m²
     lights: { indoor: LIGHTS.filter(L => !L.out).map(L => ({ kind: L.type, type: LIGHT_NAME[L.type], room: L.room, sw: L.sw })) },   // kind＝穩定代碼，type＝顯示名稱
     pendant: { name: PENDANT.name, finish: PENDANT.finish, price: PENDANT.price, dia: PENDANT.dia, shadeH: PENDANT.shadeH, bottom: PENDANT.bottom, target: PENDANT.target,
-      aboveTable: PENDANT.bottom - DINING.h, cord: PENDANT.cord, maxW: PENDANT.maxW, method: PENDANT.method, reachSwag: PENDANT.reachSwag, reachDirect: PENDANT.reachDirect,
+      aboveTable: PENDANT.bottom - DINING.h, cord: PENDANT.cord, maxW: PENDANT.maxW, method: PENDANT.method, reach: PENDANT.reach, reachSwag: PENDANT.reachSwag, reachDirect: PENDANT.reachDirect,
       offset: Math.round(PENDANT.offset), outletSide: PENDANT.outletSide, fromN: Math.round(PENDANT.y - hi('dinN')), fromW: Math.round(PENDANT.x - hi('gbE')), diningAtFridge: diningLoc === 'fridge' },
     kitchenOpen: kitchen.open,
     kitchenDevices: KITCHEN_WALL_DEVICES.map(d => ({ name: d.name, place: d.place, h: d.h, kind: d.kind, gang: d.gang, note: d.note || '' })),
