@@ -310,6 +310,13 @@ input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px;
             </div>
             <input type="range" id="waist" min="40" step="5" value="90">
           </div>
+          <div class="field">
+            <label for="sel-b1ceil">天花板</label>
+            <select id="sel-b1ceil">
+              <option value="flat">平釘 300（藏管線）</option>
+              <option value="exposed">露明 330（管線外露）</option>
+            </select>
+          </div>
         </div>
 
         <div class="grp">
@@ -536,6 +543,12 @@ const FRIDGE_X1 = lo('kE');                                                   //
 // 降板天花（地面到天花板，cm）：客戶單元圖沒有標示，先用常見值（廚房包排油煙管、浴室包暖風機與排風管），待現場確認
 const CEIL = { kitchen: 250, gbath: 230, mbath: 230 };
 const ceilH = roomId => CEIL[roomId] ?? WALL_H;
+// 臥室一天花板：flat＝平釘到 B1_FLAT（藏兩支天花板明管，西牆與北牆玻璃隔間的頂跟著停在這裡、上方木作封板）、exposed＝露明（淨高 WALL_H，管線外露）
+//   由面板切換；flat 時 CEIL.bed1 = B1_FLAT，exposed 時刪除。管底 312.5 扣角材與板材約 10 cm，實測管底若更低要再降
+const B1_FLAT = 300;
+let b1Ceil = 'flat';
+CEIL.bed1 = B1_FLAT;
+const b1Top = () => ceilH('bed1');     // 臥室一玻璃隔間的頂＝臥室一天花板高度
 // ================= 平面定義結束 =================
 
 const WALLS = [
@@ -1340,17 +1353,18 @@ function partitionWall(w) {
   const reeded = w.id === 'b1n' && partition.glassType === 'reeded';     // 長虹玻璃只用在腰牆上方
   const glassMat = reeded ? reededMat(p.to - p.from) : partition.frame === 'none' ? mat.clear : mat.glass;
   const sill = p.sill ?? partition.waist;
-  if (!p.door) return { ...w, open: [{ from: p.from, to: p.to, sill, head: WALL_H, glass: true, glassMat }] };   // 玻璃到天花板（WALL_H），上方為樓板邊
+  const head = b1Top();                                                   // 玻璃到臥室一天花板（露明 330 或平釘 300），以上為樓板邊或木作封板
+  if (!p.door) return { ...w, open: [{ from: p.from, to: p.to, sill, head, glass: true, glassMat }] };
   const d = p.door;   // 門洞留空（門片由 DOORS 畫、可開關），門上方到天花板的氣窗玻璃在 buildPartitionFrame 畫
   return { ...w, open: [
-    { from: p.from, to: d.from, sill, head: WALL_H, glass: true, glassMat },
-    { from: d.from, to: d.to, head: WALL_H },
-    { from: d.to, to: p.to, sill, head: WALL_H, glass: true, glassMat },
+    { from: p.from, to: d.from, sill, head, glass: true, glassMat },
+    { from: d.from, to: d.to, head },
+    { from: d.to, to: p.to, sill, head, glass: true, glassMat },
   ] };
 }
 function buildPartitionFrame(cut, group) {
   if (partition.mode !== 'glass') return;
-  const top = Math.min(WALL_H, cut);
+  const gTop = b1Top(), top = Math.min(gTop, cut);
   const none = partition.frame === 'none';
   const f = partition.frame === 'white' ? mat.frameWhite : mat.rail;
   for (const p of Object.values(PARTS)) {
@@ -1367,14 +1381,14 @@ function buildPartitionFrame(cut, group) {
         if (wa > 0) bar(a, b, wa, wa + 0.6, p.t + 0.4, mat.silver);  // 腰牆頂銀白收邊（蓋住牆頂剖面色）
         bar(a, b, wa, wa + 4, 3.5, mat.silver);                     // 下槽
       }
-      if (cut >= WALL_H) bar(p.from, p.to, top - 4, top, 3.5, mat.silver);   // 上槽（天花板下）
+      if (cut >= gTop) bar(p.from, p.to, top - 4, top, 3.5, mat.silver);    // 上槽（天花板下）
       for (let i = 1; i < n; i++) {                               // 玻璃對接縫（透明膠）
         const s = p.from + step * i;
         bar(s - 0.3, s + 0.3, wa, top, 1.4, mat.joint);
       }
     } else {
       bar(p.from, p.to, wa, wa + 4);                              // 下框
-      if (cut >= WALL_H) bar(p.from, p.to, top - 4, top);         // 上框
+      if (cut >= gTop) bar(p.from, p.to, top - 4, top);          // 上框
       for (let i = 0; i <= n; i++) {
         const s = Math.min(Math.max(p.from + step * i, p.from + 2), p.to - 2);
         bar(s - 2, s + 2, wa, top);                               // 直框
@@ -1614,7 +1628,7 @@ function buildTV() {
     `<li>坐姿眼高約 ${TV.eyeH} cm，觀看距離約 ${dist} cm（${(dist / TV.diag).toFixed(1)} 倍對角線），視線${angleTxt}，在舒適範圍（±10° 以內）。</li>` +
     (swap
       ? `<li>電視壁掛於客廳北牆（外牆），下方放 IKEA BESTÅ 電視櫃（180 × 42 × 39，櫃面到電視下緣約 ${Math.round(h0 - BENCH.h)} cm），上方做木作吊櫃（牆到牆 ${Math.round(CARPCAB.x1 - CARPCAB.x0)} cm、深 ${CARPCAB.d} cm，高度：${BEAM_BOTTOM}～${WALL_H} 公分，櫃底切齊樑的下緣、做到天花板包覆上方管線，櫃底距電視上緣約 ${Math.round(BEAM_BOTTOM - h1)} cm；東端做到東側大樑的側面為止），沙發靠臥室一牆。原圖北牆已有電視＋網路插座（距客廳西牆約 ${LIVING_N_OUTLETS[1].at} cm）與雙連插座（約 ${LIVING_N_OUTLETS[0].at}、${LIVING_N_OUTLETS[3].at} cm），都在 FL+30，但不在電視正後方（電視中心距西牆約 ${Math.round(TV.cx - hi('livW'))} cm）；建議把電視＋網路出線與一組電源移到電視背後約 FL+90 cm（綠色），臥室一牆的原插座可改給沙發旁的落地燈、手機充電使用。</li>` +
-        (partition.mode === 'glass' && partition.waist < WALL_H ? `<li>沙發靠背高 80 cm，${partition.waist >= 80 ? '低於' : '高於'}腰牆 ${partition.waist} cm${partition.waist >= 80 ? '，從臥室一看出去不會被沙發擋到' : '，沙發靠背會露在玻璃前'}。</li>` : '')
+        (partition.mode === 'glass' && partition.waist < b1Top() ? `<li>沙發靠背高 80 cm，${partition.waist >= 80 ? '低於' : '高於'}腰牆 ${partition.waist} cm${partition.waist >= 80 ? '，從臥室一看出去不會被沙發擋到' : '，沙發靠背會露在玻璃前'}。</li>` : '')
       : glass
         ? `<li>上方為玻璃無法壁掛，以電視原廠雙腳（腳高約 ${TV.foot} cm，左右各內縮 ${TV.footInset} cm）直接立在 IKEA BESTÅ 電視櫃（180 × 42 × 39，白色/胡桃木紋門板）上。</li>`
         : `<li>沙發靠北側結構牆，沙發上方做木作吊櫃（牆到牆，高度：${BEAM_BOTTOM}～${WALL_H} 公分，櫃底切齊樑的下緣、到頂包覆管線）。</li><li>壁掛於電視牆，中心對齊客廳中軸，下方放 IKEA BESTÅ 電視櫃（180 × 42 × 39，櫃面到電視下緣約 ${Math.round(h0 - BENCH.h)} cm）。原電視與網路插座（FL+30 cm）會被電視櫃擋住，建議重拉線路時改到電視背後約 FL+90 cm。</li>`);
@@ -1867,7 +1881,7 @@ const LIGHTS = [
   { type: 'pendant', sw: 'b', room: '餐廳',   x: PENDANT.outlet.x, y: PENDANT.outlet.y },   // 原平頂燈出線口，改吊燈
   { type: 'flush',   sw: 'c', room: '客廳',   x: 686.9, y: 342.1 },
   { type: 'flush',   sw: 'm', room: '走道',   x: 542.7, y: 545.5 },
-  { type: 'flush',   sw: 'h', room: '臥室一', x: 744.8, y: 576.0 },
+  { type: 'flush',   sw: 'h', room: '臥室一', x: 744.8, y: 576.0, ceilRoom: 'bed1', flatType: 'recess' },   // 臥室一平釘天花時改崁燈、裝在天花板高度
   { type: 'flush',   sw: 'i', room: '主臥',   x: 611.2, y: 826.6 },
   { type: 'recess',  sw: 'd', room: '廚房',   x: 363.4, y: 664.3, ceil: ceilH('kitchen') },
   { type: 'recess',  sw: 'g', room: '客浴',   x: 169.9, y: 261.5, ceil: ceilH('gbath') },
@@ -1880,6 +1894,9 @@ const LIGHTS = [
   { type: 'land',    sw: 'k', room: '露台花台', x: 1086.3, y: 786.5, out: true },
 ];
 const LIGHT_NAME = { flush: '平頂燈', recess: '崁燈', balcony: '陽台吸頂燈', outlet: '燈具／曬衣架出線', wall: '陽台壁燈', land: '景觀燈', pendant: '吊燈' };
+// 燈具所在的天花板高度與類型：有 ceilRoom 的燈跟著該房間天花板（臥室一平釘時 300），且天花板低於淨高時改用 flatType（崁燈）
+const lightCeil = L => L.ceilRoom ? ceilH(L.ceilRoom) : (L.ceil ?? WALL_H);
+const lightType = L => (L.flatType && L.ceilRoom && lightCeil(L) < WALL_H) ? L.flatType : L.type;
 // 客廳天花板的靜流風機 VAF（客戶單元圖 PDF，換算 1 pt = 2.153 cm、原點 (-584.9, -283.1)，用 6 盞已定位的燈具校正）
 //   機身：綠色雙線矩形 pt 616.7～643.5 × 330.7～342.9 → 57.5 × 26.1，中心 (771.7, 442.1)；進風格柵 16 × 16 在機身東段（pt 634.2～641.6）
 //   進氣側：機身西側一段紫色風管 pt 598.8～613.4（模型 x 704.5～736）；排風側：紫色虛線從機身東端往東北到 y≈415（pt 324.1），沿天花板往東
@@ -2050,14 +2067,14 @@ function buildLights(cut, group) {
 function buildCeilingLights(group) {
   for (const L of LIGHTS) {
     if (!CEIL_LIGHT.has(L.type)) continue;
-    const top = (L.ceil ?? WALL_H) - 0.3;
-    if (L.type === 'flush') {                                                   // 吸頂燈（示意）：ø40 × 8
+    const top = lightCeil(L) - 0.3, lt = lightType(L);
+    if (lt === 'flush') {                                                   // 吸頂燈（示意）：ø40 × 8
       ell(L.x, L.y, 20, 20, top - 7, top, lightMat.rim, group);
       ell(L.x, L.y, 17, 17, top - 8, top - 7, lightMat.glow, group);
-    } else if (L.type === 'balcony') {                                          // 陽台吸頂燈：ø28 × 7
+    } else if (lt === 'balcony') {                                              // 陽台吸頂燈：ø28 × 7
       ell(L.x, L.y, 14, 14, top - 6, top, lightMat.rim, group);
       ell(L.x, L.y, 12, 12, top - 7, top - 6, lightMat.glow, group);
-    } else if (L.type === 'recess') {                                           // 崁燈：ø12，幾乎與天花板齊平
+    } else if (lt === 'recess') {                                               // 崁燈：ø12，幾乎與天花板齊平
       ell(L.x, L.y, 7, 7, top - 1, top, lightMat.rim, group);
       ell(L.x, L.y, 5, 5, top - 1.4, top - 1, lightMat.glow, group);
     } else {                                                                    // 出線口：小方盒
@@ -2082,7 +2099,7 @@ function b1DeviceMove(d) {
   if (partition.mode !== 'glass') return { moved: false, to: null, redo: false };
   const p = PARTS[d.wall], s = devHalf(d);
   if (d.wall === 'b1n') {                                       // 北牆：玻璃在腰牆以上，插座要離下槽夠遠
-    const inGlass = partition.waist < WALL_H && d.at > p.from && d.at < p.to;
+    const inGlass = partition.waist < b1Top() && d.at > p.from && d.at < p.to;
     const moved = inGlass && d.h + s.h + DEV_CLEAR > partition.waist;
     return { moved, to: null, redo: inGlass && !moved };
   }
@@ -2825,10 +2842,18 @@ EXTRA_LABELS.forEach(l => addLabel(l.text, l.at[0], l.at[1], 'out'));
 const ceilLightLabels = [];
 for (const L of LIGHTS) {
   const pend = L.type === 'pendant';
-  const o = fixLabel(`${LIGHT_NAME[L.type]}${L.sw ? ' ' + L.sw : ''}${pend ? `<small>IKEA ${PENDANT.name} ø${PENDANT.dia}</small>` : ''}`,
+  const o = fixLabel(`${LIGHT_NAME[lightType(L)]}${L.sw ? ' ' + L.sw : ''}${pend ? `<small>IKEA ${PENDANT.name} ø${PENDANT.dia}</small>` : ''}`,
     pend ? PENDANT.x : L.x, pend ? PENDANT.y : L.y,
-    pend ? PENDANT.bottom - 6 : L.type === 'land' ? 90 : L.type === 'wall' ? 225 : (L.ceil ?? WALL_H) - 20, scene);
+    pend ? PENDANT.bottom - 6 : L.type === 'land' ? 90 : L.type === 'wall' ? 225 : lightCeil(L) - 20, scene);
+  L.labelObj = o;
   if (CEIL_LIGHT.has(L.type)) { o.visible = false; ceilLightLabels.push(o); }
+}
+// 臥室一天花板切換後，跟著天花板的燈具標籤要改名稱與高度
+function refreshLightLabels() {
+  for (const L of LIGHTS) if (L.ceilRoom && L.labelObj) {
+    L.labelObj.element.innerHTML = `${LIGHT_NAME[lightType(L)]}${L.sw ? ' ' + L.sw : ''}`;
+    L.labelObj.position.y = M(lightCeil(L) - 20);
+  }
 }
 fixLabel(`靜流風機 VAF<small>${Math.round(VAF.w)} × ${Math.round(VAF.d)} · 排風到陽台</small>`, VAF.x, VAF.y, WALL_H - VAF.h - 8, scene);
 fixLabel(`廚房 VAF<small>管中風機 · 排風管經臥室一到側廊</small>`, VAF2.x, VAF2.y, WALL_H - VAF2.h - 8, scene);
@@ -2971,9 +2996,9 @@ function updateSummary() {
   put('sum-dining', txt('sel-dining') + (diningLoc === 'fridge' ? ' · 冰箱旁' : ''));
   put('sum-master', txt('sel-layout'));
   const glassName = partition.glassType === 'reeded' ? '長虹玻璃' : '透明玻璃';
-  put('sum-bed1', partition.mode !== 'glass' ? '實牆'
-    : partition.waist >= WALL_H ? '北牆實牆＋西牆玻璃門'
-    : `腰牆 ${partition.waist} cm＋${FRAMES[partition.frame].name}${glassName}`);
+  put('sum-bed1', (partition.mode !== 'glass' ? '實牆'
+    : partition.waist >= b1Top() ? '北牆實牆＋西牆玻璃門'
+    : `腰牆 ${partition.waist} cm＋${FRAMES[partition.frame].name}${glassName}`) + (b1Ceil === 'flat' ? ` · 平釘 ${B1_FLAT}` : ''));
   saveSettings();
 }
 function setKitchen(open) {
@@ -3000,6 +3025,9 @@ function b1nNote() {
 }
 function updatePartitionUI() {
   const glass = partition.mode === 'glass';
+  waist.max = b1Top();                                                                   // 腰牆最高到臥室一天花板
+  if (partition.waist > b1Top()) { partition.waist = b1Top(); waist.value = partition.waist; }
+  document.getElementById('sel-b1ceil').value = b1Ceil;
   document.getElementById('sel-part').value = partition.mode;
   document.getElementById('waist-ctl').hidden = !glass;
   document.getElementById('frame-ctl').hidden = !glass;
@@ -3007,7 +3035,7 @@ function updatePartitionUI() {
   document.getElementById('sel-glass').value = partition.glassType;
   const F = FRAMES[partition.frame], none = partition.frame === 'none';
   const glassName = partition.glassType === 'reeded' ? '長虹玻璃（直紋半透光，保有採光、遮擋視線）' : '透明玻璃';
-  const full = partition.waist >= WALL_H;
+  const full = partition.waist >= b1Top();
   const tvOnWall = partition.waist >= TV.center + TV.h / 2 + 10;
   waistOut.textContent = partition.waist + (full ? ' cm（實牆）' : ' cm');
   const west = none
@@ -3019,6 +3047,9 @@ function updatePartitionUI() {
       ? `北牆維持實牆（腰牆拉到頂）；${west}`
       : `北牆整面拆除，下方重做 ${partition.waist} cm 木作腰牆（${b1nNote()}）、以上到天花板為${glassName}（${panelsOf(PARTS.b1n)} 片，${F.desc}）；${west}` +
         (tvOnWall ? '腰牆高於電視上緣，電視仍可壁掛。' : '客廳電視無法壁掛，改以原廠雙腳放在電視櫃上。');
+  if (glass) partNote.textContent += b1Ceil === 'flat'
+    ? ` 臥室一天花板平釘到 ${B1_FLAT}，玻璃與門上氣窗頂停在 ${B1_FLAT}、上方 ${WALL_H - B1_FLAT} cm 木作封板；兩支天花板明管藏在天花板內。`
+    : ' 臥室一天花板露明，兩支天花板明管會穿過西牆玻璃區（待裁示：包管、降板或玻璃頂停在管下）。';
   updateSummary();
 }
 function setPartition(mode) { partition.mode = mode; updatePartitionUI(); rebuild(+cut.value); buildTV(); }
@@ -3028,6 +3059,15 @@ buildTV();
 document.getElementById('sel-living').addEventListener('change', e => { living.swap = e.target.value === 'swap'; buildTV(); });
 document.getElementById('sel-part').addEventListener('change', e => setPartition(e.target.value));
 waist.addEventListener('input', () => { partition.waist = +waist.value; updatePartitionUI(); rebuild(+cut.value); buildTV(); });
+// 臥室一天花板：平釘 300 時 CEIL.bed1 生效（天花板、崁燈、玻璃頂、明管藏起來），露明時刪除
+function setB1Ceil(mode, quiet) {
+  b1Ceil = mode === 'exposed' ? 'exposed' : 'flat';
+  if (b1Ceil === 'flat') CEIL.bed1 = B1_FLAT; else delete CEIL.bed1;
+  refreshLightLabels();
+  if (quiet) return;
+  updatePartitionUI(); rebuild(+cut.value); buildTV(); saveSettings();
+}
+document.getElementById('sel-b1ceil').addEventListener('change', e => setB1Ceil(e.target.value));
 buildLayout('k6');
 // 牆面顏色：只套用室內牆面；外牆朝外的面（mat.wallExt）、女兒牆、管道間、牆頂不變
 const WALL_COLORS = {
@@ -3112,6 +3152,7 @@ function saveSettings() {
     dloc: diningLoc,
     layout: document.getElementById('sel-layout').value,
     part: { mode: partition.mode, frame: partition.frame, glass: partition.glassType, waist: partition.waist },
+    b1ceil: b1Ceil,
     view: document.getElementById('sel-view').value,
     cut: +cut.value, sunAz: +sunAz.value, sunEl: +sunEl.value, spin: spin.checked,
     wall: wallColor,
@@ -3148,6 +3189,7 @@ function loadSettings() {
     setWallColor(pick(s.wall, Object.keys(WALL_COLORS), 'warm'));
     beamMode = pick(s.beam, ['show', 'ghost', 'off'], 'show'); selBeam.value = beamMode;
     furnStyle = pick(s.furn, ['model', 'box'], 'model'); document.getElementById('sel-furn').value = furnStyle;
+    setB1Ceil(pick(s.b1ceil, ['flat', 'exposed'], 'flat'), true);
     setKitchen(typeof s.kitchen === 'boolean' ? s.kitchen : true);
     updatePartitionUI();
     rebuild(+cut.value);
@@ -3459,15 +3501,15 @@ function quoteMeasure() {
     v: 2,                    // 2：lights.kind、pendant、bed1Devices.redo
     wallH: WALL_H,
     indoorArea: Math.round(ROOMS.filter(r => !r.out).reduce((s, r) => s + r.area, 0) * 100) / 100,   // m²
-    lights: { indoor: LIGHTS.filter(L => !L.out).map(L => ({ kind: L.type, type: LIGHT_NAME[L.type], room: L.room, sw: L.sw })) },   // kind＝穩定代碼，type＝顯示名稱
+    lights: { indoor: LIGHTS.filter(L => !L.out).map(L => ({ kind: lightType(L), type: LIGHT_NAME[lightType(L)], room: L.room, sw: L.sw })) },   // kind＝穩定代碼，type＝顯示名稱（臥室一平釘時 h 為崁燈）
     pendant: { name: PENDANT.name, finish: PENDANT.finish, price: PENDANT.price, dia: PENDANT.dia, shadeH: PENDANT.shadeH, bottom: PENDANT.bottom, target: PENDANT.target,
       aboveTable: PENDANT.bottom - DINING.h, cord: PENDANT.cord, maxW: PENDANT.maxW, method: PENDANT.method, reach: PENDANT.reach, reachSwag: PENDANT.reachSwag, reachDirect: PENDANT.reachDirect,
       offset: Math.round(PENDANT.offset), outletSide: PENDANT.outletSide, fromN: Math.round(PENDANT.y - hi('dinN')), fromW: Math.round(PENDANT.x - hi('gbE')), diningAtFridge: diningLoc === 'fridge' },
     kitchenOpen: kitchen.open,
     kitchenDevices: KITCHEN_WALL_DEVICES.map(d => ({ name: d.name, place: d.place, h: d.h, kind: d.kind, gang: d.gang, note: d.note || '' })),
     kitchen: { knLen: r1(lo('kE') - COUNTER_X1), openW: r1(OP.kOpen[1] - OP.kOpen[0]), openH: 230, keLen: r1(FRIDGE_Y[0] - hi('kN')) },
-    glass: partition.mode === 'glass' && partition.waist < WALL_H,
-    bed1: { waist: partition.waist, glassType: partition.glassType, frame: FRAMES[partition.frame].name,
+    glass: partition.mode === 'glass' && partition.waist < b1Top(),
+    bed1: { waist: partition.waist, glassType: partition.glassType, frame: FRAMES[partition.frame].name, ceil: b1Top(), flat: b1Ceil === 'flat', area: ROOMS.find(r => r.id === 'bed1').area,
       nLen: r1(n.to - n.from), wLen: r1(w.to - w.from), doorW: r1(d.to - d.from), doorH: d.head, fixW: r1(w.to - d.to) },
     bed1Devices: B1_WALL_DEVICES.map(d => { const mv = b1DeviceMove(d); return { name: d.name, kind: d.kind, h: d.h, moved: mv.moved, redo: mv.redo, shift: mv.to === null ? 0 : Math.round(mv.to - d.at) }; }),
     tvNorth: living.swap,
@@ -3512,7 +3554,8 @@ const CHECKS = [
   { id: 'switch-dbc', text: '廚房北牆開關組 d、b、c 的實際位置', note: '圖面圓點畫在離牆約 30 cm 處' },
   { id: 'vaf', text: `客廳靜流風機 VAF：機身 ${Math.round(VAF.w)} × ${Math.round(VAF.d)}（圖面），高度暫以 ${VAF.h} cm 畫；排風管 ø${VAF.duct.r * 2} 穿東側大樑線與落地窗上方外牆、藏在弧形天花板裡，出風格柵接在風管下方、嵌在天花板底面，外面只看到格柵（外牆外 ${Math.round(VAF.duct.outX - hi('livE'))} cm 起，約 ${Math.round(VAF.hood.w)} × ${Math.round(VAF.hood.d)}，依現場照片）`, note: '圖面風管直接穿過樑線，假設建商有預留套管；格柵位置依圖面出風口矩形，機身高度與風管實際走法請現場確認' },
   { id: 'pipes', text: `天花板明管：廚房到臥室一 2 支、主浴到主臥 1 支，白色約 ø15、管中心離地 320；排風管位置依 PDF（y 594、740.4），抽油煙機排風管從煙囪正上方（y≈652）一直線往東穿走道與臥室一西牆到大樑前，與 VAF 排風管相距約 ${Math.round(lo('kS') - 44.2 - 594)} cm（臥室一照片以窗框為比例尺反算約 50～60）`, note: `煙囪頂到天花板的直立段穿過廚房降板天花；臥室一平頂燈 h 距排風管中心約 ${Math.round(594 - 576)} cm，燈具尺寸要配合；照片中兩支管在大樑前以彎頭收尾，PDF 排風管則穿樑穿牆到側廊出風口，推測彎頭後接較低的套管，請現場確認` },
-  { id: 'pipes-glass', text: `臥室一西牆改玻璃隔間時，廚房 VAF 排風管（門南側 y≈594）與抽油煙機排風管（y≈${Math.round(lo('kS') - 44.2)}）兩支明管（離地 ${320 - 7.5}～${320 + 7.5}）會穿過玻璃板`, note: '待裁示：包管、局部降板，或玻璃頂停在管下（約 305）；與設計師討論後再定玻璃高度' },
+  { id: 'pipes-glass', text: `臥室一西牆改玻璃隔間時，廚房 VAF 排風管（門南側 y≈594）與抽油煙機排風管（y≈${Math.round(lo('kS') - 44.2)}）兩支明管（離地 ${320 - 7.5}～${320 + 7.5}）會穿過玻璃區`, note: `臥室一天花板平釘 ${B1_FLAT} 時玻璃頂停在 ${B1_FLAT}、管線藏在天花板內即可解決；若改露明則待裁示：包管、局部降板或玻璃頂停在管下` },
+  { id: 'b1-ceil', text: `臥室一平釘天花底面離地 ${B1_FLAT}（管底 312.5 扣角材與板材約 10 cm）`, note: '實測管底若更低，天花板要再降；平頂燈 h 出線改接嵌燈；大樑底若接近 300 可與天花板切齊' },
   { id: 'b1-knee', text: `臥室一北牆改玻璃時整面拆除、下方重做木作腰牆（厚同原牆約 ${WL.kN.t} cm、雙面封板）`, note: `牆內 ${B1_WALL_DEVICES.filter(d => d.wall === 'b1n').length} 組插座原位重新安裝（腰牆低於 ${Math.max(...B1_WALL_DEVICES.filter(d => d.wall === 'b1n').map(d => d.h + devHalf(d).h + DEV_CLEAR))} cm 時改為另找位置），配線從樓板或鄰牆接回原迴路（含電視用緊急供電 ET）；請設計師確認原牆構造與拆除範圍` },
   { id: 'pendant', text: `餐廳吊燈吊點（餐桌中線上方、距北牆內面 ${Math.round(PENDANT.y - hi('dinN'))} cm）：${PENDANT.method === 'swag' ? '天花板可鎖膨脹螺絲掛鉤' : '出線延伸到吊點的配線方式（表面配線槽或打鑿埋管）'}；${PENDANT.name} 電線 ${PENDANT.cord} cm，淨高 ${WALL_H} 時燈罩底約離地 ${PENDANT.bottom}`, note: `離桌面約 ${PENDANT.bottom - DINING.h} cm，目標 ${PENDANT.target}${PENDANT.bottom > PENDANT.target ? '，想更低要請水電加長電線' : ''}；淨高較低時燈會更低，可縮短電線；燈罩高 ${PENDANT.shadeH} cm（官網）` },
   { id: 'tv', text: `電視中心離地 ${TV.center} cm、電視背後出線 FL+90`, note: '依觀看距離與坐姿眼高推算' },
