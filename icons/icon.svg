@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- 與 index.html 分頁圖示相同：青藍底白色房子；PWA 圖示（icons/*.png）由這個檔用 Edge 無頭截圖產生，見 README -->
+  <rect width="64" height="64" rx="14" fill="#0e7490"/>
+  <path d="M12 33 L32 15 L52 33" fill="none" stroke="white" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M18 30 V49 H46 V30" fill="none" stroke="white" stroke-width="5.5" stroke-linejoin="round"/>
+  <rect x="28" y="36" width="8" height="13" rx="1" fill="white"/>
+  <rect x="40" y="17" width="5" height="9" fill="white"/>
+</svg>

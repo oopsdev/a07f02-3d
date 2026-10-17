@@ -4,6 +4,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <style>body{margin:0}[hidden]{display:none!important}img{max-width:100%}</style>
+<!-- PWA：可加入手機主畫面（manifest.webmanifest、sw.js、icons/）；theme-color 與面板主色相同 -->
+<meta name="theme-color" content="#0e7490">
+<meta name="application-name" content="A07F02 3D 模型">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="A07F02">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon-180.png">
 <!-- 分頁圖示：青藍底白色房子（內嵌 SVG，不需外部檔案） -->
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230e7490'/%3E%3Cpath d='M12 33 L32 15 L52 33' fill='none' stroke='white' stroke-width='5.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M18 30 V49 H46 V30' fill='none' stroke='white' stroke-width='5.5' stroke-linejoin='round'/%3E%3Crect x='28' y='36' width='8' height='13' rx='1' fill='white'/%3E%3Crect x='40' y='17' width='5' height='9' fill='white'/%3E%3C/svg%3E">
 </head>
@@ -51,6 +60,10 @@ body { background: var(--bg); color: var(--ink); font-family: var(--font-body); 
 .lbl-toggle[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
 .walk-btn { left: auto; right: 16px; }
 .hint { position: absolute; left: 16px; bottom: 14px; font-size: 12px; color: var(--muted); background: color-mix(in srgb, var(--panel) 85%, transparent); padding: 4px 10px; border-radius: 4px; pointer-events: none; }
+/* 加入主畫面（standalone）時沒有瀏覽器列，按鈕與提示避開瀏海與圓角 */
+.lbl-toggle { top: calc(14px + env(safe-area-inset-top)); left: calc(16px + env(safe-area-inset-left)); }
+.walk-btn { left: auto; right: calc(16px + env(safe-area-inset-right)); }
+.hint { left: calc(16px + env(safe-area-inset-left)); bottom: calc(14px + env(safe-area-inset-bottom)); }
 .lbl { font-family: var(--font-body); font-size: 12px; font-weight: 500; color: #1b2321; background: rgba(255,255,255,.86); padding: 2px 7px; border-radius: 3px; white-space: nowrap; pointer-events: none; box-shadow: 0 1px 2px rgba(0,0,0,.12); text-align: center; line-height: 1.3; }
 .lbl small { display: block; font-family: var(--font-data); font-size: 10px; font-weight: 400; color: #5d6966; }
 .lbl.out { background: rgba(232,240,228,.88); }
@@ -3432,6 +3445,15 @@ renderer.setAnimationLoop(now => {
   renderer.render(scene, camera);
   labelRenderer.render(scene, camera);
 });
+</script>
+<script>
+// PWA：只在 https（GitHub Pages）註冊 service worker；本機用 file:// 開啟時瀏覽器不允許，直接略過
+const MSG_SW_FAIL = '無法註冊離線快取（service worker）：';
+if ('serviceWorker' in navigator && location.protocol === 'https:') {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(err => console.error(MSG_SW_FAIL, err));
+  });
+}
 </script>
 
 </body>

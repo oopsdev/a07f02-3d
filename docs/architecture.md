@@ -1,12 +1,12 @@
 ---
 title: A07F02 3D 模型架構
 date: 2026-10-17
-version: 1.9.0
+version: 1.11.0
 ---
 
 # 系統架構
 
-單一靜態 HTML 檔，沒有後端與資料庫。牆、門窗、柱與管道間的尺寸集中在 module script 開頭的「平面定義」區塊（依客戶單元圖 PDF 量測），房間、家具、樑、門片都由它推算；單位為公分，座標沿用 Sweet Home 3D 檔（x 向東、y 向南）。使用者的設定存在瀏覽器 localStorage。
+單一靜態 HTML 檔，沒有後端與資料庫；另有 PWA 用的 manifest、service worker 與圖示，可加入手機主畫面並離線開啟。牆、門窗、柱與管道間的尺寸集中在 module script 開頭的「平面定義」區塊（依客戶單元圖 PDF 量測），房間、家具、樑、門片都由它推算；單位為公分，座標沿用 Sweet Home 3D 檔（x 向東、y 向南）。使用者的設定存在瀏覽器 localStorage。
 
 ## 架構圖
 
@@ -31,6 +31,9 @@ flowchart LR
   L0 --> D
   I[jsDelivr three 0.160.0] --> A
   J[GitHub Pages] --> A
+  MF[manifest.webmanifest 與 icons] --> A
+  SW[sw.js service worker 快取] -.-> A
+  SW -.-> I
 ```
 
 ## 流程圖
@@ -79,3 +82,4 @@ flowchart TD
 | DOORS / SLIDERS | 平開門片（鉸鏈、開啟方向）與橫拉門片，室內漫遊時自動開關 |
 | IKEA_MODELS / placeModel | IKEA 3D 模型（base64 glb）與擺放函式：依牆面對齊、朝向、必要時縮放；讀不到時改畫方塊 |
 | SETTINGS_KEY | localStorage 設定存檔的鍵（逐欄位驗證後套用） |
+| sw.js CACHE / PRECACHE / CDN_HOSTS | service worker 的快取名稱（升版用）、預先快取的同網域檔案、採 cache-first 的 CDN 網域 |

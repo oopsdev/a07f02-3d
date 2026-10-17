@@ -1,6 +1,6 @@
 # A07F02 3D 模型
 
-遠雄洄山行 A07F02 戶 2F 平面圖重建的可旋轉 3D 模型，單一 HTML 檔，以 three.js 繪製。
+遠雄洄山行 A07F02 戶 2F 平面圖重建的可旋轉 3D 模型，單一 HTML 檔（加上 PWA 用的 manifest、service worker 與圖示），以 three.js 繪製。
 
 公開網址：https://oopsdev.github.io/a07f02-3d/
 
@@ -32,9 +32,16 @@
 
 直接用瀏覽器開啟 `index.html` 即可（`A07F02_ikea_models.js` 放在同一個資料夾），需要連網（從 jsDelivr 載入 three.js 0.160.0 與 Draco 解壓縮器、從 Google Fonts 載入字型）。
 
+## 加入手機主畫面（PWA）
+
+- Android（Chrome／Edge）：開啟公開網址 → 右上選單 → 「加到主畫面」或「安裝應用程式」
+- iPhone／iPad（Safari）：開啟公開網址 → 分享 → 「加入主畫面」
+- 加入後以全螢幕開啟；第一次開啟時會把 three.js、字型與 IKEA 模型檔存進快取，之後離線也能開（有網路時一律先抓最新版）
+- 圖示由 `icons/icon.svg` 產生（與分頁圖示相同）；重新產生時用 Edge 無頭截圖：`msedge --headless=new --window-size=512,512 --screenshot=icons/icon-512.png file:///.../icon.html`，192 與 180 用 `--force-device-scale-factor` 縮小
+
 ## 更新方式
 
-正本是 Google 雲端硬碟裡的 `建物資料/A07F02_3D模型.html`。更新時把它複製成本 repo 的 `index.html`，commit 並 push 到 `main`，GitHub Pages 會自動重新發佈。
+正本是 Google 雲端硬碟裡的 `建物資料/A07F02_3D模型.html`。更新時把它複製成本 repo 的 `index.html`，commit 並 push 到 `main`，GitHub Pages 會自動重新發佈。改 `index.html` 不用動 `sw.js`；改 `sw.js` 或要清掉舊快取時，把裡面 `CACHE` 的版本號加一。
 
 ## 資料來源與限制
 

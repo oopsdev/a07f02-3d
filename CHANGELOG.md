@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.11.0 - 2026-10-17
+
+### 新增
+- 支援 PWA，可加入手機主畫面：`manifest.webmanifest`（名稱 A07F02、standalone、主題色 #0e7490）、`sw.js` service worker（同網域檔案先連網再退回快取，jsDelivr／Google Fonts 先用快取）、`icons/` 圖示（沿用分頁圖示的青藍底白色房子：192、512、maskable 512、Apple 180，來源 `icons/icon.svg`）
+- head 加上 theme-color、apple-mobile-web-app 等 meta；加入主畫面後左上角按鈕、右上「進入室內」與左下提示避開瀏海與圓角（safe-area）
+- service worker 只在 https 註冊；本機以 file:// 開啟的 Drive 副本不受影響
+
 ## 1.10.0 - 2026-10-17
 
 ### 變更
