@@ -1881,17 +1881,19 @@ const LIGHT_NAME = { flush: '平頂燈', recess: '崁燈', balcony: '陽台吸�
 // 客廳天花板的靜流風機 VAF（客戶單元圖 PDF，換算 1 pt = 2.153 cm、原點 (-584.9, -283.1)，用 6 盞已定位的燈具校正）
 //   機身：綠色雙線矩形 pt 616.7～643.5 × 330.7～342.9 → 57.5 × 26.1，中心 (771.7, 442.1)；進風格柵 16 × 16 在機身東段（pt 634.2～641.6）
 //   進氣側：機身西側一段紫色風管 pt 598.8～613.4（模型 x 704.5～736）；排風側：紫色虛線從機身東端往東北到 y≈415（pt 324.1），沿天花板往東
-//   穿東側大樑線（x 832）與落地窗上方外牆，到外牆外 21 cm（pt 689.9 → x 900.4）接洋紅色出風口（pt 689.9～702.1 × 318.7～330.9 → 26.4 × 26.4），箭頭朝外
+//   穿東側大樑線（x 832）與落地窗上方外牆，到外牆外 21 cm（pt 689.9 → x 900.4）接洋紅色出風口（pt 689.9～702.1 × 318.7～330.9 → 26.4 × 26.4），箭頭朝外；
+//   出風口依現場照片是嵌在陽台天花板底面的方形百葉格柵（淺色框、深色葉片），不是掛在風管末端的箱子
 //   機身高度與風管直徑圖面沒有，暫以 20 cm、ø10 畫；風管高度取 320，穿樑處假設建商預留套管（待確認）
 const VAF = { x: 771.7, y: 442.1, w: 57.5, d: 26.1, h: 20, grilleX: 788.5, grille: 16,
   duct: { y: 414.6, r: 5, z: 320, bendX: 827.9, inX: 704.5, outX: 900.4 },     // inX：進氣管西端；outX：排風管東端（外牆外）
-  hood: { w: 26.4, h: 20, d: 26.4 } };                                           // 出風口：沿牆寬、高、往外深
+  hood: { w: 26.4, d: 26.4, t: 1.2, inset: 22, slats: 4 } };                     // 出風口格柵：沿牆寬、往外深、框厚、深色葉片區、葉片數（嵌在陽台天花板底面）
 const vafMat = {
   body:   new THREE.MeshStandardMaterial({ color: 0xf2f2ef, roughness: 0.55 }),
   grille: new THREE.MeshStandardMaterial({ color: 0x5a5e60, roughness: 0.6 }),
+  frame:  new THREE.MeshStandardMaterial({ color: 0xdadbd7, roughness: 0.5 }),   // 出風口格柵的淺色外框與葉片
   duct:   new THREE.MeshStandardMaterial({ color: 0xc9ccce, roughness: 0.35, metalness: 0.6 }),
 };
-// 畫在 dyn（隨剖切高度）：機身貼天花板；進氣管在機身西側；排風管往東到轉彎點、再到 y 414.6 往東穿外牆到陽台的出風口。每個零件的頂都切在 cut
+// 畫在 dyn（隨剖切高度）：機身貼天花板；進氣管在機身西側；排風管往東到轉彎點、再到 y 414.6 往東穿外牆，到陽台天花板（弧形天花板底面 WALL_H-0.3）內嵌的格柵。每個零件的頂都切在 cut
 function buildVAF(cut, group) {
   const V = VAF, top = WALL_H - 0.3, z0 = top - V.h, m = vafMat;
   if (cut <= z0) return;
@@ -1903,9 +1905,18 @@ function buildVAF(cut, group) {
   box(D.inX, V.x - V.w / 2, V.y - D.r, V.y + D.r, zd0, zd1, m.duct, m.duct, group);                                                   // 進氣管（機身西側）
   box(V.x + V.w / 2, bx, V.y - D.r, V.y + D.r, zd0, zd1, m.duct, m.duct, group);                                                     // 排風管：機身東端往東
   box(bx - D.r, bx + D.r, Math.min(V.y, D.y) - D.r, Math.max(V.y, D.y) + D.r, zd0, zd1, m.duct, m.duct, group);                      // 轉向到風管軸線
-  box(bx, D.outX, D.y - D.r, D.y + D.r, zd0, zd1, m.duct, m.duct, group);                                                             // 往東穿大樑線與外牆到陽台
-  const H = V.hood, zh0 = D.z - H.h / 2;
-  if (cut > zh0) box(D.outX, D.outX + H.d, D.y - H.w / 2, D.y + H.w / 2, zh0, Math.min(cut, D.z + H.h / 2), m.grille, m.grille, group);   // 出風口（外牆外 21 cm，圖面位置）
+  const H = V.hood, gx = D.outX + H.d / 2, gy = D.y, soffit = WALL_H - 0.3;                                                           // 格柵中心（圖面出風口矩形）
+  box(bx, gx, D.y - D.r, D.y + D.r, zd0, zd1, m.duct, m.duct, group);                                                                 // 往東穿大樑線與外牆到格柵上方
+  if (cut > D.z + D.r) ell(gx, gy, D.r, D.r, D.z + D.r, Math.min(cut, soffit - H.t), m.duct, group);                                   // 風管末端往上接到天花板內
+  if (cut > soffit - H.t) {
+    const z1 = Math.min(cut, soffit), zi = soffit - H.t - 0.1;
+    box(gx - H.w / 2, gx + H.w / 2, gy - H.d / 2, gy + H.d / 2, soffit - H.t, z1, m.frame, m.frame, group);                             // 淺色外框，底面與天花板齊
+    box(gx - H.inset / 2, gx + H.inset / 2, gy - H.inset / 2, gy + H.inset / 2, zi, Math.min(cut, zi + 0.6), m.grille, m.grille, group);   // 深色百葉區（略低 0.1 露出）
+    for (let i = 1; i <= H.slats; i++) {                                                                                                 // 葉片：沿牆方向的細條
+      const sy = gy - H.inset / 2 + H.inset * i / (H.slats + 1);
+      box(gx - H.inset / 2, gx + H.inset / 2, sy - 0.6, sy + 0.6, zi - 0.1, Math.min(cut, zi + 0.6), m.frame, m.frame, group);
+    }
+  }
 }
 const lightMat = {
   glow: new THREE.MeshStandardMaterial({ color: 0xfffaf0, emissive: 0xfff1d6, emissiveIntensity: 0.9, roughness: 0.4 }),
@@ -3422,7 +3433,7 @@ const CHECKS = [
   { id: 'entry-recess', text: `大門南側內凹約 ${Math.round(lo('entS') - OP.mainDoor[1])} cm、玄關櫃前段深 ${ENTRY_CAB.fd} cm`, note: '門片轉動時會不會碰到玄關櫃，現場量內凹深度' },
   { id: 'robe', text: `主臥西牆可用長度約 ${Math.round(MB_S - OP.mbDoor[1])} cm；ELVARLI 立柱間距假設 82.5 cm`, note: '兩欄 80 cm 是否放得下；摺門片數與軌道規格請設計師確認' },
   { id: 'switch-dbc', text: '廚房北牆開關組 d、b、c 的實際位置', note: '圖面圓點畫在離牆約 30 cm 處' },
-  { id: 'vaf', text: `客廳靜流風機 VAF：機身 ${Math.round(VAF.w)} × ${Math.round(VAF.d)}（圖面），高度暫以 ${VAF.h} cm 畫；排風管 ø${VAF.duct.r * 2} 穿東側大樑線與落地窗上方外牆，到外牆外 ${Math.round(VAF.duct.outX - hi('livE'))} cm 的出風口（圖面約 ${Math.round(VAF.hood.w)} × ${Math.round(VAF.hood.d)}）`, note: '圖面風管直接穿過樑線，假設建商有預留套管；出風口在外牆外的管段與尺寸可能只是示意，機身高度、風管位置與出風口形式請現場確認' },
+  { id: 'vaf', text: `客廳靜流風機 VAF：機身 ${Math.round(VAF.w)} × ${Math.round(VAF.d)}（圖面），高度暫以 ${VAF.h} cm 畫；排風管 ø${VAF.duct.r * 2} 穿東側大樑線與落地窗上方外牆，出風口是嵌在陽台天花板底面的方形百葉格柵（外牆外 ${Math.round(VAF.duct.outX - hi('livE'))} cm 起，約 ${Math.round(VAF.hood.w)} × ${Math.round(VAF.hood.d)}，依現場照片）`, note: '圖面風管直接穿過樑線，假設建商有預留套管；格柵位置依圖面出風口矩形，機身高度與風管實際走法請現場確認' },
   { id: 'b1-knee', text: `臥室一北牆改玻璃時整面拆除、下方重做木作腰牆（厚同原牆約 ${WL.kN.t} cm、雙面封板）`, note: `牆內 ${B1_WALL_DEVICES.filter(d => d.wall === 'b1n').length} 組插座原位重新安裝（腰牆低於 ${Math.max(...B1_WALL_DEVICES.filter(d => d.wall === 'b1n').map(d => d.h + devHalf(d).h + DEV_CLEAR))} cm 時改為另找位置），配線從樓板或鄰牆接回原迴路（含電視用緊急供電 ET）；請設計師確認原牆構造與拆除範圍` },
   { id: 'pendant', text: `餐廳吊燈吊點（餐桌中線上方、距北牆內面 ${Math.round(PENDANT.y - hi('dinN'))} cm）：${PENDANT.method === 'swag' ? '天花板可鎖膨脹螺絲掛鉤' : '出線延伸到吊點的配線方式（表面配線槽或打鑿埋管）'}；${PENDANT.name} 電線 ${PENDANT.cord} cm，淨高 ${WALL_H} 時燈罩底約離地 ${PENDANT.bottom}`, note: `離桌面約 ${PENDANT.bottom - DINING.h} cm，目標 ${PENDANT.target}${PENDANT.bottom > PENDANT.target ? '，想更低要請水電加長電線' : ''}；淨高較低時燈會更低，可縮短電線；燈罩高 ${PENDANT.shadeH} cm（官網）` },
   { id: 'tv', text: `電視中心離地 ${TV.center} cm、電視背後出線 FL+90`, note: '依觀看距離與坐姿眼高推算' },
