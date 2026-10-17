@@ -405,8 +405,9 @@ input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px;
         <li><i style="background:#0e7490"></i><span><b>藍綠色</b>電源插座，要移位（標在原位置）</span></li>
         <li><i style="background:#8e44ad"></i><span><b>紫色</b>電話、網路、電視出線，要移位（標在原位置）</span></li>
         <li><i style="background:#2e9d5b"></i><span><b>綠色</b>移位後的新位置（設計變更，與設計師確認）</span></li>
+        <li><i style="background:linear-gradient(135deg,#0e7490 50%,#2e9d5b 50%)"></i><span><b>彩色＋綠框</b>原位重新安裝：牆拆除重做，位置與高度不變，出線盒與配線重裝</span></li>
       </ul>
-      <p class="quote-hint">移位的項目會隨擺法改變：電視靠北牆時移電視出線、主臥放 180 床時移床頭插座、臥室一改玻璃隔間時移開關 h（離玻璃太近）；臥室一北牆插座在 FL+30，留在腰牆內不動（腰牆低於 42 cm 才要移）；衣櫃蓋住的開關 f 與插座一律移到衣櫃北側側板。廚房打通時拆掉的牆上的開關插座，新位置待設計師決定，模型裡不畫。餐廳平頂燈 b 改成吊燈：吊點在餐桌中線上方（綠色），原出線口不動（白色），電線沿天花板過去（電線夠長用掛鉤、不夠長就把出線延伸到吊點，見餐桌說明）。</p>
+      <p class="quote-hint">移位的項目會隨擺法改變：電視靠北牆時移電視出線、主臥放 180 床時移床頭插座、臥室一改玻璃隔間時移開關 h（離玻璃太近）；臥室一改玻璃隔間時北牆整面拆除、下方重做木作腰牆，牆上 4 組插座（FL+30）原位重新安裝（彩色＋綠框）；腰牆低於 42 cm 時插座離玻璃下槽太近，要另找位置（純彩色）；衣櫃蓋住的開關 f 與插座一律移到衣櫃北側側板。廚房打通時拆掉的牆上的開關插座，新位置待設計師決定，模型裡不畫。餐廳平頂燈 b 改成吊燈：吊點在餐桌中線上方（綠色），原出線口不動（白色），電線沿天花板過去（電線夠長用掛鉤、不夠長就把出線延伸到吊點，見餐桌說明）。</p>
     </section>
 
     <section class="sec" id="check-sec">
@@ -1951,7 +1952,7 @@ function buildCeilingLights(group) {
     }
   }
 }
-// 臥室一隔間牆上原有的開關插座（客戶單元圖 PDF 圓點位置）：改玻璃隔間時是否要移位由 b1DeviceMove 判斷
+// 臥室一隔間牆上原有的開關插座（客戶單元圖 PDF 圓點位置）：改玻璃隔間時要移位或原位重新安裝由 b1DeviceMove 判斷
 //   wall：b1n＝臥室一北牆（at 為 x；face S＝臥室一側、N＝客廳側）、b1w＝臥室一西牆（at 為 y；face E＝臥室一側）
 const B1_WALL_DEVICES = [
   { wall: 'b1n', face: 'S', at: 730.7, h: 30, kind: 'power',  name: '雙連插座（臥室一側）' },
@@ -1962,23 +1963,32 @@ const B1_WALL_DEVICES = [
 ];
 const DEV_CLEAR = 8;   // 面板邊到玻璃（含上下槽、端框）至少留 8 cm，否則要移位
 const devHalf = d => d.kind === 'switch' ? { w: 4, h: 6 } : { w: 6, h: 4 };   // 面板半寬（沿牆）、半高
-// 回傳 { moved, to }：to＝移位後沿牆的新位置；null＝不用移，或新位置待設計師決定
+// 回傳 { moved, to, redo }：to＝移位後沿牆的新位置；null＝不用移，或新位置待設計師決定
+//   redo＝原位重新安裝：北牆改上方玻璃時原牆無法只拆上半，整面拆除後下方重做木作腰牆，牆內插座位置不變但出線盒與配線要重新安裝
 function b1DeviceMove(d) {
-  if (partition.mode !== 'glass') return { moved: false, to: null };
+  if (partition.mode !== 'glass') return { moved: false, to: null, redo: false };
   const p = PARTS[d.wall], s = devHalf(d);
   if (d.wall === 'b1n') {                                       // 北牆：玻璃在腰牆以上，插座要離下槽夠遠
     const inGlass = partition.waist < WALL_H && d.at > p.from && d.at < p.to;
-    return { moved: inGlass && d.h + s.h + DEV_CLEAR > partition.waist, to: null };
+    const moved = inGlass && d.h + s.h + DEV_CLEAR > partition.waist;
+    return { moved, to: null, redo: inGlass && !moved };
   }
   // 西牆：走道段整段落地玻璃（p.from～p.to），開關在玻璃南端外的實牆上，離玻璃端太近就往南移
   const near = d.at + s.w + DEV_CLEAR > p.from && d.at - s.w - DEV_CLEAR < p.to;
-  return { moved: near, to: near ? Math.ceil(p.to + DEV_CLEAR + s.w) : null };
+  return { moved: near, to: near ? Math.ceil(p.to + DEV_CLEAR + s.w) : null, redo: false };
 }
 function drawB1Device(d, at, m, group) {
   const s = devHalf(d), h0 = d.h - s.h, h1 = d.h + s.h;
   if (d.wall === 'b1w') box(hi('b1W'), hi('b1W') + 1.2, at - s.w, at + s.w, h0, h1, m, m, group);
   else if (d.face === 'S') box(at - s.w, at + s.w, hi('kN'), hi('kN') + 1.2, h0, h1, m, m, group);
   else box(at - s.w, at + s.w, lo('kN') - 1.2, lo('kN'), h0, h1, m, m, group);
+}
+// 原位重新安裝的標示：面板後方多一片略大的綠色底板（凸出 0.6，面板凸出 1.2），看起來是彩色面板加綠框
+function drawB1Frame(d, at, group) {
+  const s = devHalf(d), h0 = d.h - s.h - 1.2, h1 = d.h + s.h + 1.2, w = s.w + 1.2, m = DEV_MAT.to;
+  if (d.wall === 'b1w') box(hi('b1W'), hi('b1W') + 0.6, at - w, at + w, h0, h1, m, m, group);
+  else if (d.face === 'S') box(at - w, at + w, hi('kN'), hi('kN') + 0.6, h0, h1, m, m, group);
+  else box(at - w, at + w, lo('kN') - 0.6, lo('kN'), h0, h1, m, m, group);
 }
 // 廚房打通時會拆掉的牆面上，原有的開關與插座（客戶單元圖 PDF）：打通就要移位
 //   wall：kn＝廚房北牆（at 為 x，face 北＝餐廳側）、ke＝廚房東牆（at 為 y，face 東＝走道側）；gang＝開關切數
@@ -2651,10 +2661,11 @@ function rebuild(cut) {
   buildBeams(cut, dyn);
   buildLights(cut, dyn);
   if (ceilReady) buildCeilings();
-  for (const d of B1_WALL_DEVICES) {                                     // 臥室一隔間牆：不動＝白色；要移位＝原位上色、新位置綠色
+  for (const d of B1_WALL_DEVICES) {                                     // 臥室一隔間牆：不動＝白色；要移位＝原位上色、新位置綠色；原位重新安裝＝上色＋綠框
     if (d.h + devHalf(d).h > cut) continue;
     const mv = b1DeviceMove(d);
-    drawB1Device(d, d.at, devMat(d.kind, mv.moved), dyn);
+    drawB1Device(d, d.at, devMat(d.kind, mv.moved || mv.redo), dyn);
+    if (mv.redo) drawB1Frame(d, d.at, dyn);
     if (mv.to !== null) drawB1Device(d, mv.to, DEV_MAT.to, dyn);
   }
   if (!kitchen.open) {                                                   // 廚房原始隔間：牆上原有開關插座不動（白色）；打通時隨牆拆除、新位置待設計師決定
@@ -2882,7 +2893,7 @@ function updatePartitionUI() {
     ? '北牆與西牆皆為實牆，客廳電視可壁掛在北牆上。'
     : full
       ? `北牆維持實牆（腰牆拉到頂）；${west}`
-      : `北牆改為下方 ${partition.waist} cm 腰牆、以上到天花板為${glassName}（${panelsOf(PARTS.b1n)} 片，${F.desc}）；${west}` +
+      : `北牆整面拆除，下方重做 ${partition.waist} cm 木作腰牆（牆內 4 組插座原位重新安裝）、以上到天花板為${glassName}（${panelsOf(PARTS.b1n)} 片，${F.desc}）；${west}` +
         (tvOnWall ? '腰牆高於電視上緣，電視仍可壁掛。' : '客廳電視無法壁掛，改以原廠雙腳放在電視櫃上。');
   updateSummary();
 }
@@ -3334,7 +3345,7 @@ function quoteMeasure() {
     glass: partition.mode === 'glass' && partition.waist < WALL_H,
     bed1: { waist: partition.waist, glassType: partition.glassType, frame: FRAMES[partition.frame].name,
       nLen: r1(n.to - n.from), wLen: r1(w.to - w.from), doorW: r1(d.to - d.from), doorH: d.head, fixW: r1(w.to - d.to) },
-    bed1Devices: B1_WALL_DEVICES.map(d => { const mv = b1DeviceMove(d); return { name: d.name, kind: d.kind, h: d.h, moved: mv.moved, shift: mv.to === null ? 0 : Math.round(mv.to - d.at) }; }),
+    bed1Devices: B1_WALL_DEVICES.map(d => { const mv = b1DeviceMove(d); return { name: d.name, kind: d.kind, h: d.h, moved: mv.moved, redo: mv.redo, shift: mv.to === null ? 0 : Math.round(mv.to - d.at) }; }),
     tvNorth: living.swap,
     tvWall: { tvCx: Math.round(TV.cx - hi('livW')), ctv: LIVING_N_OUTLETS[1].at, power: [LIVING_N_OUTLETS[0].at, LIVING_N_OUTLETS[3].at] },
     layout: document.getElementById('sel-layout').value,
@@ -3374,6 +3385,7 @@ const CHECKS = [
   { id: 'entry-recess', text: `大門南側內凹約 ${Math.round(lo('entS') - OP.mainDoor[1])} cm、玄關櫃前段深 ${ENTRY_CAB.fd} cm`, note: '門片轉動時會不會碰到玄關櫃，現場量內凹深度' },
   { id: 'robe', text: `主臥西牆可用長度約 ${Math.round(MB_S - OP.mbDoor[1])} cm；ELVARLI 立柱間距假設 82.5 cm`, note: '兩欄 80 cm 是否放得下；摺門片數與軌道規格請設計師確認' },
   { id: 'switch-dbc', text: '廚房北牆開關組 d、b、c 的實際位置', note: '圖面圓點畫在離牆約 30 cm 處' },
+  { id: 'b1-knee', text: '臥室一北牆改玻璃時整面拆除、下方重做木作腰牆（厚同原牆約 10.5 cm、雙面封板）', note: '牆內 4 組插座原位重新安裝，配線從樓板或鄰牆接回原迴路（含電視用緊急供電 ET）；請設計師確認原牆構造與拆除範圍' },
   { id: 'pendant', text: `餐廳吊燈吊點（餐桌中線上方、距北牆內面 ${Math.round(PENDANT.y - hi('dinN'))} cm）：${PENDANT.method === 'swag' ? '天花板可鎖膨脹螺絲掛鉤' : '出線延伸到吊點的配線方式（表面配線槽或打鑿埋管）'}；${PENDANT.name} 電線 ${PENDANT.cord} cm，淨高 ${WALL_H} 時燈罩底約離地 ${PENDANT.bottom}`, note: `離桌面約 ${PENDANT.bottom - DINING.h} cm，目標 ${PENDANT.target}${PENDANT.bottom > PENDANT.target ? '，想更低要請水電加長電線' : ''}；淨高較低時燈會更低，可縮短電線；燈罩高 ${PENDANT.shadeH} cm（官網）` },
   { id: 'tv', text: `電視中心離地 ${TV.center} cm、電視背後出線 FL+90`, note: '依觀看距離與坐姿眼高推算' },
   { id: 'milsbo', text: 'MILSBO 實際寬度：官網 73 cm、3D 模型 81.5 cm', note: '影響電視櫃左側到牆的距離' },
