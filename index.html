@@ -1893,14 +1893,54 @@ const vafMat = {
   body:   new THREE.MeshStandardMaterial({ color: 0xf2f2ef, roughness: 0.55 }),
   grille: new THREE.MeshStandardMaterial({ color: 0x5a5e60, roughness: 0.6 }),
   frame:  new THREE.MeshStandardMaterial({ color: 0xdadbd7, roughness: 0.5 }),   // 出風口格柵的淺色外框與葉片
+  pipe:   new THREE.MeshStandardMaterial({ color: 0xf4f4f1, roughness: 0.45 }),   // 天花板下的白色明管
   duct:   new THREE.MeshStandardMaterial({ color: 0xc9ccce, roughness: 0.35, metalness: 0.6 }),
 };
 // 畫在 dyn（隨剖切高度）：機身貼天花板；進氣管在機身西側；排風管往東到轉彎點、再到 y 414.6 往東穿外牆，在弧形天花板裡到格柵上方、往下接格柵（底面與天花板齊）。每個零件的頂都切在 cut
-function buildVAF(cut, group) {
-  const V = VAF, top = WALL_H - 0.3, z0 = top - V.h, m = vafMat;
-  if (cut <= z0) return;
+// 廚房的第二台 VAF（PDF：紫色風管在 x≈364 由北往南、中段留空 y 541～569 就是機身；機身尺寸暫用與客廳同款）
+//   北側短管（y 509～542）是進氣；南側接排風管，沿 y 594 往東穿走道與臥室一（PDF 畫到臥室一東外牆外側）
+const VAF2 = { x: 364, y: 555, w: 57.5, d: 26.1, h: 20, grilleX: 364, grille: 16 };
+// 天花板下的明管（實品屋照片：白色圓管約 ø15，貼天花板）：pts 為平面折線（cm），z 為管中心離地，drop 為末端往下的彎頭長度
+//   照片中臥室一的兩支管在東側大樑垂板前以彎頭朝下收尾；主臥那支從北牆西側（主浴）出來、沿北牆附近往東到東窗上方彎下。位置依照片相對窗與牆估計，待現場量
+const CEIL_PIPES = [
+  { name: '廚房 VAF 排風管', pts: [[VAF2.x, VAF2.y + VAF2.d / 2], [VAF2.x, 594], [832 - 7.5, 594]], r: 7.5, z: 320, drop: 15, label: [700, 594] },   // PDF 紫色虛線 y≈594；照片中在臥室一門南側穿西牆
+  { name: '廚房→臥室一 管線 2', pts: [[400, 548], [832 - 7.5, 548]], r: 7.5, z: 320, drop: 15, label: [700, 548] },                           // 照片中與排風管平行、約在臥室一門正上方；起點與用途待確認
+  { name: '主浴→主臥 管線', pts: [[300, 745], [lo('mE') - 10, 745]], r: 7.5, z: 320, drop: 20, label: [600, 745] },                        // 照片：主浴出來沿主臥北牆附近往東，到東窗上方彎下
+  { name: '廚房 VAF 進氣管', pts: [[VAF2.x, 509], [VAF2.x, VAF2.y - VAF2.d / 2]], r: 5, z: 320, drop: 0 },
+];
+// 水平圓管：沿平面線段 (x0,y0)→(x1,y1)，管中心高 z
+function tube(x0, y0, x1, y1, z, r, m, g) {
+  const len = Math.hypot(x1 - x0, y1 - y0);
+  if (len <= 0) return;
+  const mesh = new THREE.Mesh(new THREE.CylinderGeometry(M(r), M(r), M(len), 20), m);
+  const [px0, pz0] = P(x0, y0), [px1, pz1] = P(x1, y1);
+  mesh.position.set((px0 + px1) / 2, M(z), (pz0 + pz1) / 2);
+  mesh.rotation.z = Math.PI / 2;                                  // 圓柱軸由 Y 轉成沿 X
+  mesh.rotation.y = Math.atan2(-(pz1 - pz0), px1 - px0);         // 再轉到線段方向（Euler XYZ：先套 Z 再套 Y）
+  mesh.castShadow = mesh.receiveShadow = true;
+  g.add(mesh);
+}
+// 明管只在剖切高度高於管頂時整支畫出（圓管不好切半）
+function buildCeilPipes(cut, group) {
+  for (const pipe of CEIL_PIPES) {
+    if (cut < pipe.z + pipe.r) continue;
+    for (let i = 1; i < pipe.pts.length; i++) tube(...pipe.pts[i - 1], ...pipe.pts[i], pipe.z, pipe.r, vafMat.pipe, group);
+    for (let i = 1; i < pipe.pts.length - 1; i++) ell(pipe.pts[i][0], pipe.pts[i][1], pipe.r, pipe.r, pipe.z - pipe.r, pipe.z + pipe.r, vafMat.pipe, group);   // 轉角補圓
+    if (pipe.drop > 0) { const [ex, ey] = pipe.pts[pipe.pts.length - 1]; ell(ex, ey, pipe.r, pipe.r, pipe.z - pipe.drop, pipe.z, vafMat.pipe, group); }      // 末端彎頭朝下
+  }
+}
+// 機身與下方進風格柵（兩台共用）
+function vafBody(V, cut, group) {
+  const top = WALL_H - 0.3, z0 = top - V.h, m = vafMat;
+  if (cut <= z0) return false;
   box(V.x - V.w / 2, V.x + V.w / 2, V.y - V.d / 2, V.y + V.d / 2, z0, Math.min(cut, top), m.body, m.body, group);                      // 機身
   box(V.grilleX - V.grille / 2, V.grilleX + V.grille / 2, V.y - V.grille / 2, V.y + V.grille / 2, z0 - 0.6, z0, m.grille, m.grille, group);   // 進風格柵（機身下方）
+  return true;
+}
+function buildVAF(cut, group) {
+  vafBody(VAF2, cut, group);
+  const V = VAF, m = vafMat;
+  if (!vafBody(V, cut, group)) return;
   const D = V.duct, zd0 = D.z - D.r;
   if (cut <= zd0) return;
   const zd1 = Math.min(cut, D.z + D.r), bx = D.bendX;
@@ -2703,6 +2743,7 @@ function rebuild(cut) {
   buildBeams(cut, dyn);
   buildLights(cut, dyn);
   buildVAF(cut, dyn);
+  buildCeilPipes(cut, dyn);
   if (ceilReady) buildCeilings();
   for (const d of B1_WALL_DEVICES) {                                     // 臥室一隔間牆：不動＝白色；要移位＝原位上色、新位置綠色；原位重新安裝＝上色＋綠框
     if (d.h + devHalf(d).h > cut) continue;
@@ -2759,6 +2800,8 @@ for (const L of LIGHTS) {
   if (CEIL_LIGHT.has(L.type)) { o.visible = false; ceilLightLabels.push(o); }
 }
 fixLabel(`靜流風機 VAF<small>${Math.round(VAF.w)} × ${Math.round(VAF.d)} · 排風到陽台</small>`, VAF.x, VAF.y, WALL_H - VAF.h - 8, scene);
+fixLabel(`廚房 VAF<small>排風管沿天花板到臥室一</small>`, VAF2.x, VAF2.y, WALL_H - VAF2.h - 8, scene);
+for (const pipe of CEIL_PIPES) if (pipe.label) fixLabel(`${pipe.name}<small>ø${pipe.r * 2} · 貼天花板</small>`, pipe.label[0], pipe.label[1], pipe.z - 12, scene);
 
 // ---------- 面板 ----------
 const roomsEl = document.getElementById('rooms');
@@ -3437,6 +3480,7 @@ const CHECKS = [
   { id: 'robe', text: `主臥西牆可用長度約 ${Math.round(MB_S - OP.mbDoor[1])} cm；ELVARLI 立柱間距假設 82.5 cm`, note: '兩欄 80 cm 是否放得下；摺門片數與軌道規格請設計師確認' },
   { id: 'switch-dbc', text: '廚房北牆開關組 d、b、c 的實際位置', note: '圖面圓點畫在離牆約 30 cm 處' },
   { id: 'vaf', text: `客廳靜流風機 VAF：機身 ${Math.round(VAF.w)} × ${Math.round(VAF.d)}（圖面），高度暫以 ${VAF.h} cm 畫；排風管 ø${VAF.duct.r * 2} 穿東側大樑線與落地窗上方外牆、藏在弧形天花板裡，出風格柵接在風管下方、嵌在天花板底面，外面只看到格柵（外牆外 ${Math.round(VAF.duct.outX - hi('livE'))} cm 起，約 ${Math.round(VAF.hood.w)} × ${Math.round(VAF.hood.d)}，依現場照片）`, note: '圖面風管直接穿過樑線，假設建商有預留套管；格柵位置依圖面出風口矩形，機身高度與風管實際走法請現場確認' },
+  { id: 'pipes', text: '天花板明管（實品屋照片）：廚房到臥室一 2 支、主浴到主臥 1 支，白色約 ø15、貼天花板，位置依照片相對窗與牆估計', note: '臥室一兩支在門正上方（y≈548）與門南側（y≈594，PDF 廚房 VAF 排風管）；主臥那支離北牆約 40 cm（y≈745）；第 2 支的起點與用途待確認；影響臥室一與主臥天花板、吊櫃' },
   { id: 'b1-knee', text: `臥室一北牆改玻璃時整面拆除、下方重做木作腰牆（厚同原牆約 ${WL.kN.t} cm、雙面封板）`, note: `牆內 ${B1_WALL_DEVICES.filter(d => d.wall === 'b1n').length} 組插座原位重新安裝（腰牆低於 ${Math.max(...B1_WALL_DEVICES.filter(d => d.wall === 'b1n').map(d => d.h + devHalf(d).h + DEV_CLEAR))} cm 時改為另找位置），配線從樓板或鄰牆接回原迴路（含電視用緊急供電 ET）；請設計師確認原牆構造與拆除範圍` },
   { id: 'pendant', text: `餐廳吊燈吊點（餐桌中線上方、距北牆內面 ${Math.round(PENDANT.y - hi('dinN'))} cm）：${PENDANT.method === 'swag' ? '天花板可鎖膨脹螺絲掛鉤' : '出線延伸到吊點的配線方式（表面配線槽或打鑿埋管）'}；${PENDANT.name} 電線 ${PENDANT.cord} cm，淨高 ${WALL_H} 時燈罩底約離地 ${PENDANT.bottom}`, note: `離桌面約 ${PENDANT.bottom - DINING.h} cm，目標 ${PENDANT.target}${PENDANT.bottom > PENDANT.target ? '，想更低要請水電加長電線' : ''}；淨高較低時燈會更低，可縮短電線；燈罩高 ${PENDANT.shadeH} cm（官網）` },
   { id: 'tv', text: `電視中心離地 ${TV.center} cm、電視背後出線 FL+90`, note: '依觀看距離與坐姿眼高推算' },
