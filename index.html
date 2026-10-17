@@ -407,7 +407,7 @@ input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px;
         <li><i style="background:#2e9d5b"></i><span><b>綠色</b>移位後的新位置（設計變更，與設計師確認）</span></li>
         <li><i style="background:linear-gradient(135deg,#0e7490 50%,#2e9d5b 50%)"></i><span><b>彩色＋綠框</b>原位重新安裝：牆拆除重做，位置與高度不變，出線盒與配線重裝</span></li>
       </ul>
-      <p class="quote-hint">移位的項目會隨擺法改變：電視靠北牆時移電視出線、主臥放 180 床時移床頭插座、臥室一改玻璃隔間時移開關 h（離玻璃太近）；臥室一改玻璃隔間時北牆整面拆除、下方重做木作腰牆，牆上 4 組插座（FL+30）原位重新安裝（彩色＋綠框）；腰牆低於 42 cm 時插座離玻璃下槽太近，要另找位置（純彩色）；衣櫃蓋住的開關 f 與插座一律移到衣櫃北側側板。廚房打通時拆掉的牆上的開關插座，新位置待設計師決定，模型裡不畫。餐廳平頂燈 b 改成吊燈：吊點在餐桌中線上方（綠色），原出線口不動（白色），電線沿天花板過去（電線夠長用掛鉤、不夠長就把出線延伸到吊點，見餐桌說明）。</p>
+      <p class="quote-hint">移位的項目會隨擺法改變：電視靠北牆時移電視出線、主臥放 180 床時移床頭插座、臥室一改玻璃隔間時移開關 h（離玻璃太近），北牆則整面拆除、下方重做木作腰牆，牆上 4 組插座（FL+30）原位重新安裝（彩色＋綠框）；腰牆低於 42 cm 時插座離玻璃下槽太近，要另找位置（純彩色）；衣櫃蓋住的開關 f 與插座一律移到衣櫃北側側板。廚房打通時拆掉的牆上的開關插座，新位置待設計師決定，模型裡不畫。餐廳平頂燈 b 改成吊燈：吊點在餐桌中線上方（綠色），原出線口不動（白色），電線沿天花板過去（電線夠長用掛鉤、不夠長就把出線延伸到吊點，見餐桌說明）。</p>
     </section>
 
     <section class="sec" id="check-sec">
@@ -1878,6 +1878,30 @@ const LIGHTS = [
   { type: 'land',    sw: 'k', room: '露台花台', x: 1086.3, y: 786.5, out: true },
 ];
 const LIGHT_NAME = { flush: '平頂燈', recess: '崁燈', balcony: '陽台吸頂燈', outlet: '燈具／曬衣架出線', wall: '陽台壁燈', land: '景觀燈', pendant: '吊燈' };
+// 客廳天花板的靜流風機 VAF（客戶單元圖 PDF：綠色機身矩形 pt 615.6～644.8 × 331.9～341.7，換算 1 pt = 2.153 cm、原點 (-584.9, -283.1)）
+//   機身 63 × 21、進風格柵在機身東段；排風管（紫色虛線）從機身東端往東北到 y≈415，沿天花板往東穿過東側大樑線與落地窗上方外牆，陽台側出風口（箭頭朝外）
+//   機身高度與風管直徑圖面沒有，暫以 20 cm、ø10 畫；風管高度取機身中段 320，穿樑處假設建商預留套管（待確認）
+const VAF = { x: 771.9, y: 442.0, w: 63, d: 21, h: 20, grilleX: 788.5, grille: 16, duct: { y: 414.6, r: 5, z: 320, bendX: 827.9 }, hood: { w: 20, h: 20, out: 10 } };
+const vafMat = {
+  body:   new THREE.MeshStandardMaterial({ color: 0xf2f2ef, roughness: 0.55 }),
+  grille: new THREE.MeshStandardMaterial({ color: 0x5a5e60, roughness: 0.6 }),
+  duct:   new THREE.MeshStandardMaterial({ color: 0xc9ccce, roughness: 0.35, metalness: 0.6 }),
+};
+// 畫在 dyn（隨剖切高度）：機身貼天花板，風管先往東到轉彎點、再斜到 y 414.6 往東穿外牆，出風口在外牆外側面
+function buildVAF(cut, group) {
+  const V = VAF, top = WALL_H - 0.3, z0 = top - V.h;
+  if (cut <= z0) return;
+  const z1 = Math.min(cut, top), m = vafMat;
+  box(V.x - V.w / 2, V.x + V.w / 2, V.y - V.d / 2, V.y + V.d / 2, z0, z1, m.body, m.body, group);                                  // 機身
+  box(V.grilleX - V.grille / 2, V.grilleX + V.grille / 2, V.y - V.grille / 2, V.y + V.grille / 2, z0 - 0.6, z0, m.grille, m.grille, group);   // 進風格柵（機身下方）
+  const D = V.duct, zd0 = D.z - D.r, zd1 = D.z + D.r;
+  if (cut < zd1) return;
+  const x0 = V.x + V.w / 2, bx = D.bendX, wallOut = hi('livE');
+  box(x0, bx, V.y - D.r, V.y + D.r, zd0, zd1, m.duct, m.duct, group);                                                                // 機身東端往東
+  box(bx - D.r, bx + D.r, Math.min(V.y, D.y) - D.r, Math.max(V.y, D.y) + D.r, zd0, zd1, m.duct, m.duct, group);                      // 轉向北到風管軸線
+  box(bx, wallOut, D.y - D.r, D.y + D.r, zd0, zd1, m.duct, m.duct, group);                                                            // 往東穿大樑線與外牆到陽台
+  box(wallOut, wallOut + V.hood.out, D.y - V.hood.w / 2, D.y + V.hood.w / 2, D.z - V.hood.h / 2, D.z + V.hood.h / 2, m.grille, m.grille, group);   // 陽台側出風口
+}
 const lightMat = {
   glow: new THREE.MeshStandardMaterial({ color: 0xfffaf0, emissive: 0xfff1d6, emissiveIntensity: 0.9, roughness: 0.4 }),
   rim:  new THREE.MeshStandardMaterial({ color: 0xe9e7e2, roughness: 0.5 }),
@@ -2660,12 +2684,13 @@ function rebuild(cut) {
   buildCanopy(cut, dyn);
   buildBeams(cut, dyn);
   buildLights(cut, dyn);
+  buildVAF(cut, dyn);
   if (ceilReady) buildCeilings();
   for (const d of B1_WALL_DEVICES) {                                     // 臥室一隔間牆：不動＝白色；要移位＝原位上色、新位置綠色；原位重新安裝＝上色＋綠框
     if (d.h + devHalf(d).h > cut) continue;
     const mv = b1DeviceMove(d);
     drawB1Device(d, d.at, devMat(d.kind, mv.moved || mv.redo), dyn);
-    if (mv.redo) drawB1Frame(d, d.at, dyn);
+    if (mv.redo && d.h + devHalf(d).h + 1.2 <= cut) drawB1Frame(d, d.at, dyn);   // 底板比面板高 1.2，也要在剖切高度以下
     if (mv.to !== null) drawB1Device(d, mv.to, DEV_MAT.to, dyn);
   }
   if (!kitchen.open) {                                                   // 廚房原始隔間：牆上原有開關插座不動（白色）；打通時隨牆拆除、新位置待設計師決定
@@ -2715,6 +2740,7 @@ for (const L of LIGHTS) {
     pend ? PENDANT.bottom - 6 : L.type === 'land' ? 90 : L.type === 'wall' ? 225 : (L.ceil ?? WALL_H) - 20, scene);
   if (CEIL_LIGHT.has(L.type)) { o.visible = false; ceilLightLabels.push(o); }
 }
+fixLabel(`靜流風機 VAF<small>${VAF.w} × ${VAF.d} · 排風到陽台</small>`, VAF.x, VAF.y, WALL_H - VAF.h - 8, scene);
 
 // ---------- 面板 ----------
 const roomsEl = document.getElementById('rooms');
@@ -2874,6 +2900,12 @@ buildDining('daily');
 
 const waist = document.getElementById('waist'), waistOut = document.getElementById('waist-out');
 const partNote = document.getElementById('part-note');
+// 北牆插座處置的文字：原位重新安裝幾組、離玻璃下槽太近要另找位置幾組
+function b1nNote() {
+  const st = B1_WALL_DEVICES.filter(d => d.wall === 'b1n').map(b1DeviceMove);
+  const redo = st.filter(m => m.redo).length, moved = st.filter(m => m.moved).length;
+  return [redo ? `牆內 ${redo} 組插座原位重新安裝` : '', moved ? `${moved} 組插座離玻璃下槽太近要另找位置` : ''].filter(Boolean).join('、') || '牆內沒有插座';
+}
 function updatePartitionUI() {
   const glass = partition.mode === 'glass';
   document.getElementById('sel-part').value = partition.mode;
@@ -2893,7 +2925,7 @@ function updatePartitionUI() {
     ? '北牆與西牆皆為實牆，客廳電視可壁掛在北牆上。'
     : full
       ? `北牆維持實牆（腰牆拉到頂）；${west}`
-      : `北牆整面拆除，下方重做 ${partition.waist} cm 木作腰牆（牆內 4 組插座原位重新安裝）、以上到天花板為${glassName}（${panelsOf(PARTS.b1n)} 片，${F.desc}）；${west}` +
+      : `北牆整面拆除，下方重做 ${partition.waist} cm 木作腰牆（${b1nNote()}）、以上到天花板為${glassName}（${panelsOf(PARTS.b1n)} 片，${F.desc}）；${west}` +
         (tvOnWall ? '腰牆高於電視上緣，電視仍可壁掛。' : '客廳電視無法壁掛，改以原廠雙腳放在電視櫃上。');
   updateSummary();
 }
@@ -3332,7 +3364,7 @@ function quoteMeasure() {
   for (const b of BEAMS) if (b.x1 > C.x0 && b.x0 < C.x1 && b.y1 > cback && b.y0 < cf) cabLen -= Math.min(C.x1, b.x1) - Math.max(C.x0, b.x0);
   const r1 = v => Math.round(v * 10) / 10;
   return {
-    v: 1,
+    v: 2,                    // 2：lights.kind、pendant、bed1Devices.redo
     wallH: WALL_H,
     indoorArea: Math.round(ROOMS.filter(r => !r.out).reduce((s, r) => s + r.area, 0) * 100) / 100,   // m²
     lights: { indoor: LIGHTS.filter(L => !L.out).map(L => ({ kind: L.type, type: LIGHT_NAME[L.type], room: L.room, sw: L.sw })) },   // kind＝穩定代碼，type＝顯示名稱
@@ -3385,7 +3417,8 @@ const CHECKS = [
   { id: 'entry-recess', text: `大門南側內凹約 ${Math.round(lo('entS') - OP.mainDoor[1])} cm、玄關櫃前段深 ${ENTRY_CAB.fd} cm`, note: '門片轉動時會不會碰到玄關櫃，現場量內凹深度' },
   { id: 'robe', text: `主臥西牆可用長度約 ${Math.round(MB_S - OP.mbDoor[1])} cm；ELVARLI 立柱間距假設 82.5 cm`, note: '兩欄 80 cm 是否放得下；摺門片數與軌道規格請設計師確認' },
   { id: 'switch-dbc', text: '廚房北牆開關組 d、b、c 的實際位置', note: '圖面圓點畫在離牆約 30 cm 處' },
-  { id: 'b1-knee', text: '臥室一北牆改玻璃時整面拆除、下方重做木作腰牆（厚同原牆約 10.5 cm、雙面封板）', note: '牆內 4 組插座原位重新安裝，配線從樓板或鄰牆接回原迴路（含電視用緊急供電 ET）；請設計師確認原牆構造與拆除範圍' },
+  { id: 'vaf', text: `客廳靜流風機 VAF：機身 ${VAF.w} × ${VAF.d}（圖面），高度暫以 ${VAF.h} cm 畫；排風管 ø${VAF.duct.r * 2} 穿東側大樑線與落地窗上方外牆到陽台`, note: '圖面風管直接穿過樑線，假設建商有預留套管；機身高度、風管位置與出風口請現場確認，影響客廳天花板與吊櫃東端' },
+  { id: 'b1-knee', text: `臥室一北牆改玻璃時整面拆除、下方重做木作腰牆（厚同原牆約 ${WL.kN.t} cm、雙面封板）`, note: `牆內 ${B1_WALL_DEVICES.filter(d => d.wall === 'b1n').length} 組插座原位重新安裝（腰牆低於 ${30 + 4 + DEV_CLEAR} cm 時改為另找位置），配線從樓板或鄰牆接回原迴路（含電視用緊急供電 ET）；請設計師確認原牆構造與拆除範圍` },
   { id: 'pendant', text: `餐廳吊燈吊點（餐桌中線上方、距北牆內面 ${Math.round(PENDANT.y - hi('dinN'))} cm）：${PENDANT.method === 'swag' ? '天花板可鎖膨脹螺絲掛鉤' : '出線延伸到吊點的配線方式（表面配線槽或打鑿埋管）'}；${PENDANT.name} 電線 ${PENDANT.cord} cm，淨高 ${WALL_H} 時燈罩底約離地 ${PENDANT.bottom}`, note: `離桌面約 ${PENDANT.bottom - DINING.h} cm，目標 ${PENDANT.target}${PENDANT.bottom > PENDANT.target ? '，想更低要請水電加長電線' : ''}；淨高較低時燈會更低，可縮短電線；燈罩高 ${PENDANT.shadeH} cm（官網）` },
   { id: 'tv', text: `電視中心離地 ${TV.center} cm、電視背後出線 FL+90`, note: '依觀看距離與坐姿眼高推算' },
   { id: 'milsbo', text: 'MILSBO 實際寬度：官網 73 cm、3D 模型 81.5 cm', note: '影響電視櫃左側到牆的距離' },

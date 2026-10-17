@@ -1,7 +1,7 @@
 ---
 title: A07F02 3D 模型架構
 date: 2026-10-17
-version: 1.12.0
+version: 1.13.0
 ---
 
 # 系統架構
@@ -75,6 +75,7 @@ flowchart TD
 | ROOMS / FLOOR_PATCHES | 房間地板矩形、材質、尺寸與面積；牆下補片與門檻 |
 | PARTS | 臥室一可切換玻璃隔間的牆段 |
 | LAYOUTS / DINING / TV / SOFA / COFFEE / VITRINE | 家具配置與 IKEA 尺寸 |
+| VAF | 客廳天花板靜流風機（PDF 位置）：機身、格柵、排風管路徑與陽台出風口 |
 | LIGHTS / PENDANT | 客戶單元圖的燈具位置與類型（平頂燈、崁燈、壁燈、景觀燈、出線口）；餐廳吊燈（IKEA VÄXJÖ）的吊點、尺寸、電線長度、吊法（掛鉤繞線或出線延伸）與原出線口 |
 | LIVING_N_OUTLETS / SOUTH_OUTLETS / KITCHEN_WALL_DEVICES / B1_WALL_DEVICES / MB_WALL_DEVICES | 牆上原有的開關插座；依擺法判斷是否移位（原位上色、新位置綠色）或原位重新安裝（上色＋綠框，臥室一北牆整面重做時） |
 | CHECKS | 待確認數值清單（勾選狀態存 localStorage，鍵 CHECKS_KEY） |
