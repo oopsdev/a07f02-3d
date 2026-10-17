@@ -1618,7 +1618,7 @@ const diningMat = {
   greenLeg: new THREE.MeshStandardMaterial({ color: 0x349445, roughness: 0.45 }), // 亮綠色漆實木腳
 };
 let diningGroup = null, diningMode = 'daily';
-let diningLoc = 'fridge';          // 預設冰箱旁；area = 餐廳靠北牆；fridge = 冰箱旁（桌端貼冰箱北側，需廚房打通）
+let diningLoc = 'area';            // 預設餐廳靠北牆；area = 餐廳靠北牆；fridge = 冰箱旁（桌端貼冰箱北側，需廚房打通）
 const FRIDGE_N = FRIDGE_Y[0];       // 冰箱北側面 y
 function buildDining(mode) {
   if (diningGroup) {
@@ -2905,7 +2905,7 @@ const spin = document.getElementById('spin');
 spin.addEventListener('change', () => { controls.autoRotate = spin.checked; controls.autoRotateSpeed = 0.8; saveSettings(); });
 
 // ---------- 記住設定：存在瀏覽器 localStorage，重新載入時套用；讀寫失敗就照預設值顯示 ----------
-const SETTINGS_KEY = 'a07f02-settings-v4';   // 預設值改變時升版，舊的自動存檔不再套用
+const SETTINGS_KEY = 'a07f02-settings-v5';   // 預設值改變時升版，舊的自動存檔不再套用
 function saveSettings() {
   if (!settingsReady) return;
   const s = {
@@ -2955,7 +2955,7 @@ function loadSettings() {
     updatePartitionUI();
     rebuild(+cut.value);
     buildTV();
-    diningLoc = (pick(s.dloc, ['area', 'fridge'], 'fridge') === 'fridge' && kitchen.open) ? 'fridge' : 'area';
+    diningLoc = (pick(s.dloc, ['area', 'fridge'], 'area') === 'fridge' && kitchen.open) ? 'fridge' : 'area';
     buildDining(pick(s.dining, ['daily', 'guest'], 'daily'));
     buildLayout(pick(s.layout, Object.keys(LAYOUTS), 'k6'));
     setView(pick(s.view, Object.keys(VIEWS), 'iso'), true);
