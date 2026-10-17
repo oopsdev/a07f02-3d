@@ -1,7 +1,7 @@
 ---
 title: A07F02 3D 模型架構
 date: 2026-10-17
-version: 1.13.2
+version: 1.13.3
 ---
 
 # 系統架構
@@ -71,7 +71,7 @@ flowchart TD
 | BEAM_TOP / BEAM_BOTTOM | 樑頂（與牆頂切齊）、樑底離地（暫定 270） |
 | WALLS | 由 WL、OP 推算的牆段：外牆面方向、端點外延、開口（門窗位置、窗台、楣樑、門窗形式） |
 | BEAMS | 樑的平面範圍；ext 表示在外牆以外、用外牆磚材質 |
-| PARAPETS / PLANTERS / SHAFTS / CANOPY | 女兒牆、花台、管道間與柱、陽台弧形天花板 |
+| PARAPETS / PLANTERS / SHAFTS / CANOPY | 女兒牆、花台、管道間與柱、陽台弧形天花板（頂面齊樓板頂，底面低於室內天花板 drop，藏 VAF 排風管） |
 | ROOMS / FLOOR_PATCHES | 房間地板矩形、材質、尺寸與面積；牆下補片與門檻 |
 | PARTS | 臥室一可切換玻璃隔間的牆段 |
 | LAYOUTS / DINING / TV / SOFA / COFFEE / VITRINE | 家具配置與 IKEA 尺寸 |
