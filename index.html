@@ -1897,16 +1897,18 @@ const vafMat = {
   duct:   new THREE.MeshStandardMaterial({ color: 0xc9ccce, roughness: 0.35, metalness: 0.6 }),
 };
 // 畫在 dyn（隨剖切高度）：機身貼天花板；進氣管在機身西側；排風管往東到轉彎點、再到 y 414.6 往東穿外牆，在弧形天花板裡到格柵上方、往下接格柵（底面與天花板齊）。每個零件的頂都切在 cut
-// 廚房的第二台 VAF（PDF：紫色風管在 x≈364 由北往南、中段留空 y 541～569 就是機身；機身尺寸暫用與客廳同款）
-//   北側短管（y 509～542）是進氣；南側接排風管，沿 y 594 往東穿走道與臥室一（PDF 畫到臥室一東外牆外側）
-const VAF2 = { x: 364, y: 555, w: 57.5, d: 26.1, h: 20, grilleX: 364, grille: 16 };
-// 天花板下的明管（實品屋照片：白色圓管約 ø15，貼天花板）：pts 為平面折線（cm），z 為管中心離地，drop 為末端往下的彎頭長度
-//   照片中臥室一的兩支管在東側大樑垂板前以彎頭朝下收尾；主臥那支從北牆西側（主浴）出來、沿北牆附近往東到東窗上方彎下。位置依照片相對窗與牆估計，待現場量
+// 廚房的第二台 VAF（PDF）：管中風機符號 18.6 × 28（pt x 355.0～373.6、y 541～569 的風管缺口）；北端 ø22.5 洋紅網格圓是進風口 (364.5, 509.4)，開在廚房降板天花（CEIL.kitchen）
+//   機身與風管都在降板天花之上（z 320），廚房裡看不到；排風管沿 y 594 往東穿走道、臥室一，再穿東側大樑線與臥室一東外牆，到側廊天花板的出風格柵（PDF 出風口 942.5～968.6 × 582.6～608.9）
+const VAF2 = { x: 364.3, y: 555, w: 18.6, d: 28, h: 20, intake: { x: 364.5, y: 509.4, r: 11.25 } };
+// 天花板下的明管（實品屋照片＋PDF）：白色圓管約 ø15、管中心離地 320 貼天花板；pts 為平面折線（cm），drop 為末端往下的彎頭長度，
+//   cont 為彎頭之後較低的續接段（藏在樑裡穿牆），grille 為露台／側廊天花板內嵌出風格柵的中心（與客廳 VAF 同款，26 × 26）
+//   照片：臥室一兩支管在東側大樑垂板前以彎頭朝下收尾（PDF 排風管則穿樑穿牆到側廊出風口，推測彎頭後接較低的套管）；主臥那支沿北牆附近往東到東窗上方
 const CEIL_PIPES = [
-  { name: '廚房 VAF 排風管', pts: [[VAF2.x, VAF2.y + VAF2.d / 2], [VAF2.x, 594], [832 - 7.5, 594]], r: 7.5, z: 320, drop: 15, label: [700, 594] },   // PDF 紫色虛線 y≈594；照片中在臥室一門南側穿西牆
-  { name: '廚房→臥室一 管線 2', pts: [[400, 548], [832 - 7.5, 548]], r: 7.5, z: 320, drop: 15, label: [700, 548] },                           // 照片中與排風管平行、約在臥室一門正上方；起點與用途待確認
-  { name: '主浴→主臥 管線', pts: [[300, 745], [lo('mE') - 10, 745]], r: 7.5, z: 320, drop: 20, label: [600, 745] },                        // 照片：主浴出來沿主臥北牆附近往東，到東窗上方彎下
-  { name: '廚房 VAF 進氣管', pts: [[VAF2.x, 509], [VAF2.x, VAF2.y - VAF2.d / 2]], r: 5, z: 320, drop: 0 },
+  { name: '廚房 VAF 排風管', pts: [[VAF2.x, VAF2.y + VAF2.d / 2], [VAF2.x, 594], [832 - 7.5, 594]], r: 7.5, z: 320, drop: 12,
+    cont: { z: 308, to: [955.5, 594] }, grille: [955.5, 595.7], label: [700, 594] },                              // PDF 紫色虛線 y≈594 → 臥室一東外牆外出風口
+  { name: '廚房→臥室一 管線 2', pts: [[420, 515], [832 - 7.5, 515]], r: 7.5, z: 320, drop: 15, label: [700, 515] },   // 照片：與排風管平行、約在臥室一門上方，避開走道平頂燈 m（y 525～566）；起點與用途待確認
+  { name: '主浴→主臥 排風管', pts: [[393, 740.4], [904.5, 740.4]], r: 7.5, z: 320, drop: 0, grille: [904.5, 740.4], label: [600, 740.4] },   // PDF 青色虛線 y 740.4：主浴東牆內往東穿主臥東牆到露台出風口
+  { name: '廚房 VAF 進氣管', pts: [[VAF2.intake.x, VAF2.intake.y], [VAF2.x, VAF2.y - VAF2.d / 2]], r: 5, z: 320, drop: 0 },
 ];
 // 水平圓管：沿平面線段 (x0,y0)→(x1,y1)，管中心高 z
 function tube(x0, y0, x1, y1, z, r, m, g) {
@@ -1920,25 +1922,51 @@ function tube(x0, y0, x1, y1, z, r, m, g) {
   mesh.castShadow = mesh.receiveShadow = true;
   g.add(mesh);
 }
-// 明管只在剖切高度高於管頂時整支畫出（圓管不好切半）
+// 明管只在剖切高度高於管頂時整支畫出（圓管不好切半）；續接段與出風格柵另依各自高度判斷
 function buildCeilPipes(cut, group) {
+  const m = vafMat.pipe;
   for (const pipe of CEIL_PIPES) {
     if (cut < pipe.z + pipe.r) continue;
-    for (let i = 1; i < pipe.pts.length; i++) tube(...pipe.pts[i - 1], ...pipe.pts[i], pipe.z, pipe.r, vafMat.pipe, group);
-    for (let i = 1; i < pipe.pts.length - 1; i++) ell(pipe.pts[i][0], pipe.pts[i][1], pipe.r, pipe.r, pipe.z - pipe.r, pipe.z + pipe.r, vafMat.pipe, group);   // 轉角補圓
-    if (pipe.drop > 0) { const [ex, ey] = pipe.pts[pipe.pts.length - 1]; ell(ex, ey, pipe.r, pipe.r, pipe.z - pipe.drop, pipe.z, vafMat.pipe, group); }      // 末端彎頭朝下
+    for (let i = 1; i < pipe.pts.length; i++) tube(...pipe.pts[i - 1], ...pipe.pts[i], pipe.z, pipe.r, m, group);
+    for (let i = 1; i < pipe.pts.length - 1; i++) ell(pipe.pts[i][0], pipe.pts[i][1], pipe.r, pipe.r, pipe.z - pipe.r, pipe.z + pipe.r, m, group);   // 轉角補圓
+    const [ex, ey] = pipe.pts[pipe.pts.length - 1];
+    if (pipe.drop > 0) ell(ex, ey, pipe.r, pipe.r, pipe.z - pipe.drop, pipe.z + pipe.r, m, group);                                         // 末端彎頭朝下（蓋住管端）
+    if (pipe.cont && cut >= pipe.cont.z + pipe.r) tube(ex, ey, pipe.cont.to[0], pipe.cont.to[1], pipe.cont.z, pipe.r, m, group);           // 彎頭後較低的續接段（藏在樑裡穿牆）
+    if (pipe.grille) soffitGrille(pipe.grille[0], pipe.grille[1], (pipe.cont ? pipe.cont.z : pipe.z) - pipe.r, pipe.r, cut, group);        // 露台／側廊天花板內嵌出風格柵
   }
 }
-// 機身與下方進風格柵（兩台共用）
+// 弧形天花板底面內嵌的方形百葉格柵（與客廳 VAF 出風口同款），上方以短管接到 pipeBottom
+function soffitGrille(gx, gy, pipeBottom, r, cut, group) {
+  const H = VAF.hood, m = vafMat, soffit = WALL_H - CANOPY.drop - 0.3;
+  if (cut > soffit && pipeBottom > soffit) ell(gx, gy, r, r, soffit, Math.min(cut, pipeBottom), m.duct, group);                                // 往下接到格柵
+  if (cut <= soffit - H.t) return;
+  const z1 = Math.min(cut, soffit), zi = soffit - H.t - 0.1;
+  box(gx - H.w / 2, gx + H.w / 2, gy - H.d / 2, gy + H.d / 2, soffit - H.t, z1, m.frame, m.frame, group);                                       // 淺色外框，底面與天花板齊
+  box(gx - H.inset / 2, gx + H.inset / 2, gy - H.inset / 2, gy + H.inset / 2, zi, Math.min(cut, zi + 0.6), m.grille, m.grille, group);             // 深色百葉區（略低 0.1 露出）
+  for (let i = 1; i <= H.slats; i++) {                                                                                                           // 葉片：沿牆方向的細條
+    const sy = gy - H.inset / 2 + H.inset * i / (H.slats + 1);
+    box(gx - H.inset / 2, gx + H.inset / 2, sy - 0.6, sy + 0.6, zi - 0.1, Math.min(cut, zi + 0.6), m.frame, m.frame, group);
+  }
+}
+// 機身與下方進風格柵（有 grilleX 才畫格柵）
 function vafBody(V, cut, group) {
   const top = WALL_H - 0.3, z0 = top - V.h, m = vafMat;
   if (cut <= z0) return false;
   box(V.x - V.w / 2, V.x + V.w / 2, V.y - V.d / 2, V.y + V.d / 2, z0, Math.min(cut, top), m.body, m.body, group);                      // 機身
-  box(V.grilleX - V.grille / 2, V.grilleX + V.grille / 2, V.y - V.grille / 2, V.y + V.grille / 2, z0 - 0.6, z0, m.grille, m.grille, group);   // 進風格柵（機身下方）
+  if (V.grilleX !== undefined) box(V.grilleX - V.grille / 2, V.grilleX + V.grille / 2, V.y - V.grille / 2, V.y + V.grille / 2, z0 - 0.6, z0, m.grille, m.grille, group);   // 進風格柵（機身下方）
   return true;
+}
+// 廚房 VAF 的進風口：ø22.5 圓形格柵開在廚房降板天花底面，直立短管往上接進氣管
+function buildKitchenIntake(cut, group) {
+  const I = VAF2.intake, zc = CEIL.kitchen - 0.3, m = vafMat;
+  if (cut <= zc - 1) return;
+  ell(I.x, I.y, I.r, I.r, zc - 1, Math.min(cut, zc), m.frame, group);                                                            // 外框
+  ell(I.x, I.y, I.r - 2, I.r - 2, zc - 1.1, Math.min(cut, zc - 0.5), m.grille, group);                                           // 深色格柵面（略低露出）
+  if (cut > zc) ell(I.x, I.y, 5, 5, zc, Math.min(cut, 320 - 5), m.duct, group);                                                   // 直立短管到天花板下的進氣管
 }
 function buildVAF(cut, group) {
   vafBody(VAF2, cut, group);
+  buildKitchenIntake(cut, group);
   const V = VAF, m = vafMat;
   if (!vafBody(V, cut, group)) return;
   const D = V.duct, zd0 = D.z - D.r;
@@ -2800,7 +2828,7 @@ for (const L of LIGHTS) {
   if (CEIL_LIGHT.has(L.type)) { o.visible = false; ceilLightLabels.push(o); }
 }
 fixLabel(`靜流風機 VAF<small>${Math.round(VAF.w)} × ${Math.round(VAF.d)} · 排風到陽台</small>`, VAF.x, VAF.y, WALL_H - VAF.h - 8, scene);
-fixLabel(`廚房 VAF<small>排風管沿天花板到臥室一</small>`, VAF2.x, VAF2.y, WALL_H - VAF2.h - 8, scene);
+fixLabel(`廚房 VAF<small>管中風機 · 排風管經臥室一到側廊</small>`, VAF2.x, VAF2.y, WALL_H - VAF2.h - 8, scene);
 for (const pipe of CEIL_PIPES) if (pipe.label) fixLabel(`${pipe.name}<small>ø${pipe.r * 2} · 貼天花板</small>`, pipe.label[0], pipe.label[1], pipe.z - 12, scene);
 
 // ---------- 面板 ----------
@@ -3480,7 +3508,8 @@ const CHECKS = [
   { id: 'robe', text: `主臥西牆可用長度約 ${Math.round(MB_S - OP.mbDoor[1])} cm；ELVARLI 立柱間距假設 82.5 cm`, note: '兩欄 80 cm 是否放得下；摺門片數與軌道規格請設計師確認' },
   { id: 'switch-dbc', text: '廚房北牆開關組 d、b、c 的實際位置', note: '圖面圓點畫在離牆約 30 cm 處' },
   { id: 'vaf', text: `客廳靜流風機 VAF：機身 ${Math.round(VAF.w)} × ${Math.round(VAF.d)}（圖面），高度暫以 ${VAF.h} cm 畫；排風管 ø${VAF.duct.r * 2} 穿東側大樑線與落地窗上方外牆、藏在弧形天花板裡，出風格柵接在風管下方、嵌在天花板底面，外面只看到格柵（外牆外 ${Math.round(VAF.duct.outX - hi('livE'))} cm 起，約 ${Math.round(VAF.hood.w)} × ${Math.round(VAF.hood.d)}，依現場照片）`, note: '圖面風管直接穿過樑線，假設建商有預留套管；格柵位置依圖面出風口矩形，機身高度與風管實際走法請現場確認' },
-  { id: 'pipes', text: '天花板明管（實品屋照片）：廚房到臥室一 2 支、主浴到主臥 1 支，白色約 ø15、貼天花板，位置依照片相對窗與牆估計', note: '臥室一兩支在門正上方（y≈548）與門南側（y≈594，PDF 廚房 VAF 排風管）；主臥那支離北牆約 40 cm（y≈745）；第 2 支的起點與用途待確認；影響臥室一與主臥天花板、吊櫃' },
+  { id: 'pipes', text: `天花板明管：廚房到臥室一 2 支、主浴到主臥 1 支，白色約 ø15、管中心離地 320；排風管位置依 PDF（y 594、740.4），第 2 支依照片估在臥室一門上方（y≈515）`, note: `第 2 支起點與用途待確認；臥室一平頂燈 h 距排風管中心約 ${Math.round(594 - 576)} cm，燈具尺寸要配合；照片中兩支管在大樑前以彎頭收尾，PDF 排風管則穿樑穿牆到側廊出風口，推測彎頭後接較低的套管，請現場確認` },
+  { id: 'pipes-glass', text: `臥室一西牆改玻璃隔間時，兩支明管（離地 ${320 - 7.5}～${320 + 7.5}）會穿過門上氣窗與玻璃板`, note: '待裁示：包管、局部降板，或玻璃頂停在管下（約 305）；與設計師討論後再定玻璃高度' },
   { id: 'b1-knee', text: `臥室一北牆改玻璃時整面拆除、下方重做木作腰牆（厚同原牆約 ${WL.kN.t} cm、雙面封板）`, note: `牆內 ${B1_WALL_DEVICES.filter(d => d.wall === 'b1n').length} 組插座原位重新安裝（腰牆低於 ${Math.max(...B1_WALL_DEVICES.filter(d => d.wall === 'b1n').map(d => d.h + devHalf(d).h + DEV_CLEAR))} cm 時改為另找位置），配線從樓板或鄰牆接回原迴路（含電視用緊急供電 ET）；請設計師確認原牆構造與拆除範圍` },
   { id: 'pendant', text: `餐廳吊燈吊點（餐桌中線上方、距北牆內面 ${Math.round(PENDANT.y - hi('dinN'))} cm）：${PENDANT.method === 'swag' ? '天花板可鎖膨脹螺絲掛鉤' : '出線延伸到吊點的配線方式（表面配線槽或打鑿埋管）'}；${PENDANT.name} 電線 ${PENDANT.cord} cm，淨高 ${WALL_H} 時燈罩底約離地 ${PENDANT.bottom}`, note: `離桌面約 ${PENDANT.bottom - DINING.h} cm，目標 ${PENDANT.target}${PENDANT.bottom > PENDANT.target ? '，想更低要請水電加長電線' : ''}；淨高較低時燈會更低，可縮短電線；燈罩高 ${PENDANT.shadeH} cm（官網）` },
   { id: 'tv', text: `電視中心離地 ${TV.center} cm、電視背後出線 FL+90`, note: '依觀看距離與坐姿眼高推算' },

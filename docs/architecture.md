@@ -1,7 +1,7 @@
 ---
 title: A07F02 3D 模型架構
 date: 2026-10-17
-version: 1.14.0
+version: 1.14.1
 ---
 
 # 系統架構
@@ -76,7 +76,7 @@ flowchart TD
 | PARTS | 臥室一可切換玻璃隔間的牆段 |
 | LAYOUTS / DINING / TV / SOFA / COFFEE / VITRINE | 家具配置與 IKEA 尺寸 |
 | VAF / VAF2 | 客廳與廚房天花板靜流風機（PDF 位置）：機身、進風格柵、進氣與排風管路徑、嵌在陽台天花板的出風口格柵 |
-| CEIL_PIPES | 實品屋照片中的天花板明管：平面折線、管徑、高度、末端彎頭（tube 畫水平圓管） |
+| CEIL_PIPES | 天花板明管（照片＋PDF）：平面折線、管徑、高度、末端彎頭、較低的續接段與露台天花板出風格柵（tube 畫水平圓管、soffitGrille 畫格柵） |
 | LIGHTS / PENDANT | 客戶單元圖的燈具位置與類型（平頂燈、崁燈、壁燈、景觀燈、出線口）；餐廳吊燈（IKEA VÄXJÖ）的吊點、尺寸、電線長度、吊法（掛鉤繞線或出線延伸）與原出線口 |
 | LIVING_N_OUTLETS / SOUTH_OUTLETS / KITCHEN_WALL_DEVICES / B1_WALL_DEVICES / MB_WALL_DEVICES | 牆上原有的開關插座；依擺法判斷是否移位（原位上色、新位置綠色）或原位重新安裝（上色＋綠框，臥室一北牆整面重做時） |
 | CHECKS | 待確認數值清單（勾選狀態存 localStorage，鍵 CHECKS_KEY） |
