@@ -278,7 +278,7 @@ input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px;
           <div class="field">
             <label for="sel-mbbox">天花板管線</label>
             <select id="sel-mbbox">
-              <option value="box">沿北牆包管（底 300）</option>
+              <option value="box">北牆包管＋門內走道平釘（底 300）</option>
               <option value="exposed">露明</option>
             </select>
           </div>
@@ -557,6 +557,8 @@ let b1Ceil = 'flat';
 CEIL.bed1 = CEIL.hall = B1_FLAT;
 const b1Top = () => ceilH('bed1');     // 臥室一玻璃隔間的頂＝臥室一天花板高度
 // 主臥沿北牆的包管（假樑）：只包主浴排風管（y 740.4、管底 312.5）的有效範圍，不降整間天花板；底面與走道、臥室一的平釘天花同高
+//   主臥門在 y 611.5 那道牆，門內約 1 m 深的門內走道（x 489.9～595.3、y 616.7～711.3）算在主臥裡，抽油煙機排風管（y 651.5）橫過它的天花板，
+//   所以門內走道的天花板一併平釘到同高，與北牆包管連成 L 形
 //   從主浴東牆面到主臥東牆面，南緣到 760（管南緣 747.9 留約 12 cm 給角材與板材）；由面板切換，預設包管
 const MB_BOX = { y1: 760, z0: B1_FLAT };
 let mbBox = 'box';
@@ -1966,11 +1968,14 @@ function buildCeilPipes(cut, group) {
     if (pipe.grille) soffitGrille(pipe.grille[0], pipe.grille[1], (pipe.cont ? pipe.cont.z : pipe.z) - pipe.r, pipe.r, cut, group);        // 露台／側廊天花板內嵌出風格柵
   }
 }
-// 主臥沿北牆的包管：x 從主浴東牆面到主臥東牆面、y 從北牆面（含牆的凸凹差）到 MB_BOX.y1、z 從底面到天花板；牆面材質，隨剖切高度
+// 主臥沿北牆的包管：x 從主浴東牆面到主臥東牆面、y 從北牆面（含牆的凸凹差）到 MB_BOX.y1；門內走道：x 兩側牆面之間、y 從門那道牆的南面到 MB_BOX.y1；z 從底面到天花板；牆面材質，隨剖切高度
 function buildMbBox(cut, group) {
   if (mbBox !== 'box' || cut <= MB_BOX.z0) return;
-  box(hi('mbW'), lo('mE'), hi('kS'), MB_BOX.y1, MB_BOX.z0, Math.min(cut, WALL_H - 0.3), mat.wall, mat.wall, group);
+  const top = Math.min(cut, WALL_H - 0.3);
+  box(hi('mbW'), lo('mE'), hi('kS'), MB_BOX.y1, MB_BOX.z0, top, mat.wall, mat.wall, group);            // 沿北牆的假樑
+  box(hi('kE'), lo('b1W'), hi('mDoor'), hi('kS'), MB_BOX.z0, top, mat.wall, mat.wall, group);          // 門內走道的平釘天花（抽油煙機排風管在上面）
 }
+
 // 弧形天花板底面內嵌的方形百葉格柵（與客廳 VAF 出風口同款），上方以短管接到 pipeBottom
 function soffitGrille(gx, gy, pipeBottom, r, cut, group) {
   const H = VAF.hood, m = vafMat, soffit = WALL_H - CANOPY.drop - 0.3;
@@ -3545,7 +3550,8 @@ function quoteMeasure() {
     entry: { front: r1(E.split - E.fx0), back: r1(E.bx1 - E.split), fd: E.fd, bd: E.bd, niche: E.niche[1] - E.niche[0], lift: E.lift },
     cabinet: { len: r1(cabLen), d: C.d, h0: BEAM_BOTTOM },
     robeDevices: { fromDoor: Math.round(MB_WALL_DEVICES.at - OP.mbDoor[1]), outletH: MB_WALL_DEVICES.outletH, switchH: MB_WALL_DEVICES.switchH },
-    mbBox: { on: mbBox === 'box', len: Math.round((lo('mE') - hi('mbW')) * 10) / 10, w: Math.round((MB_BOX.y1 - hi('kS')) * 10) / 10, drop: WALL_H - MB_BOX.z0 },
+    mbBox: { on: mbBox === 'box', len: Math.round((lo('mE') - hi('mbW')) * 10) / 10, w: Math.round((MB_BOX.y1 - hi('kS')) * 10) / 10, drop: WALL_H - MB_BOX.z0,
+      alcoveArea: Math.round((lo('b1W') - hi('kE')) * (hi('kS') - hi('mDoor')) / 100) / 100 },   // 門內走道平釘天花 m²
     robe: { len: Math.round(WARDROBE.len * 10) / 10, h: WARDROBE.h, posts: WARDROBE.sections.length + 1,
       shelves: WARDROBE.sections.reduce((s, x) => s + x.shelves.length, 0), rails: WARDROBE.sections.reduce((s, x) => s + x.rails.length, 0),
       panels: WARDROBE.doorCols },
@@ -3583,7 +3589,7 @@ const CHECKS = [
   { id: 'vaf', text: `客廳靜流風機 VAF：機身 ${Math.round(VAF.w)} × ${Math.round(VAF.d)}（圖面），高度暫以 ${VAF.h} cm 畫；排風管 ø${VAF.duct.r * 2} 穿東側大樑線與落地窗上方外牆、藏在弧形天花板裡，出風格柵接在風管下方、嵌在天花板底面，外面只看到格柵（外牆外 ${Math.round(VAF.duct.outX - hi('livE'))} cm 起，約 ${Math.round(VAF.hood.w)} × ${Math.round(VAF.hood.d)}，依現場照片）`, note: '圖面風管直接穿過樑線，假設建商有預留套管；格柵位置依圖面出風口矩形，機身高度與風管實際走法請現場確認' },
   { id: 'pipes', text: `天花板明管：廚房到臥室一 2 支、主浴到主臥 1 支，白色約 ø15、管中心離地 320；排風管位置依 PDF（y 594、740.4），抽油煙機排風管從煙囪正上方（y≈652）一直線往東穿走道與臥室一西牆到大樑前，與 VAF 排風管相距約 ${Math.round(lo('kS') - 44.2 - 594)} cm（臥室一照片以窗框為比例尺反算約 50～60）`, note: `煙囪頂到天花板的直立段穿過廚房降板天花；臥室一平頂燈 h 距排風管中心約 ${Math.round(594 - 576)} cm，燈具尺寸要配合；照片中兩支管在大樑前以彎頭收尾，PDF 排風管則穿樑穿牆到側廊出風口，推測彎頭後接較低的套管，請現場確認` },
   { id: 'pipes-glass', text: `臥室一西牆改玻璃隔間時，廚房 VAF 排風管（門南側 y≈594）與抽油煙機排風管（y≈${Math.round(lo('kS') - 44.2)}）兩支明管（離地 ${320 - 7.5}～${320 + 7.5}）會穿過玻璃區`, note: `臥室一天花板平釘 ${B1_FLAT} 時玻璃頂停在 ${B1_FLAT}、管線藏在天花板內即可解決；若改露明則待裁示：包管、局部降板或玻璃頂停在管下` },
-  { id: 'mb-box', text: `主臥沿北牆包管：寬 ${Math.round(MB_BOX.y1 - hi('kS'))}、高 ${WALL_H - MB_BOX.z0}（底面離地 ${MB_BOX.z0}），包住主浴排風管（管底 312.5）`, note: '只包有效範圍、不降整間天花板；實測管底若更低要加高；可順便做層板間接照明' },
+  { id: 'mb-box', text: `主臥沿北牆包管：寬 ${Math.round(MB_BOX.y1 - hi('kS'))}、高 ${WALL_H - MB_BOX.z0}（底面離地 ${MB_BOX.z0}），包住主浴排風管（管底 312.5）；門內走道（約 ${Math.round(lo('b1W') - hi('kE'))} × ${Math.round(hi('kS') - hi('mDoor'))}）天花板一併平釘到 ${MB_BOX.z0}，藏橫過的抽油煙機排風管`, note: '只包有效範圍、不降主臥主要天花板；實測管底若更低要加高；可順便做層板間接照明' },
   { id: 'b1-ceil', text: `臥室一與走道平釘天花底面離地 ${B1_FLAT}（管底 312.5 扣角材與板材約 10 cm）`, note: '實測管底若更低，天花板要再降；平頂燈 h、m 出線改接嵌燈；大樑底若接近 300 可與天花板切齊；從餐廳看過去是廚房 250、走道與臥室一 300 的階梯' },
   { id: 'b1-knee', text: `臥室一北牆改玻璃時整面拆除、下方重做木作腰牆（厚同原牆約 ${WL.kN.t} cm、雙面封板）`, note: `牆內 ${B1_WALL_DEVICES.filter(d => d.wall === 'b1n').length} 組插座原位重新安裝（腰牆低於 ${Math.max(...B1_WALL_DEVICES.filter(d => d.wall === 'b1n').map(d => d.h + devHalf(d).h + DEV_CLEAR))} cm 時改為另找位置），配線從樓板或鄰牆接回原迴路（含電視用緊急供電 ET）；請設計師確認原牆構造與拆除範圍` },
   { id: 'pendant', text: `餐廳吊燈吊點（餐桌中線上方、距北牆內面 ${Math.round(PENDANT.y - hi('dinN'))} cm）：${PENDANT.method === 'swag' ? '天花板可鎖膨脹螺絲掛鉤' : '出線延伸到吊點的配線方式（表面配線槽或打鑿埋管）'}；${PENDANT.name} 電線 ${PENDANT.cord} cm，淨高 ${WALL_H} 時燈罩底約離地 ${PENDANT.bottom}`, note: `離桌面約 ${PENDANT.bottom - DINING.h} cm，目標 ${PENDANT.target}${PENDANT.bottom > PENDANT.target ? '，想更低要請水電加長電線' : ''}；淨高較低時燈會更低，可縮短電線；燈罩高 ${PENDANT.shadeH} cm（官網）` },
