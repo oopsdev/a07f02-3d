@@ -1,12 +1,12 @@
 ---
 title: A07F02 3D 模型架構
 date: 2026-11-11
-version: 1.17.0
+version: 2.0.0
 ---
 
 # 系統架構
 
-單一靜態 HTML 檔，沒有後端與資料庫；另有 PWA 用的 manifest、service worker 與圖示，可加入手機主畫面並離線開啟。牆、門窗、柱與管道間的尺寸集中在 module script 開頭的「平面定義」區塊（依客戶單元圖 PDF 量測），房間、家具、樑、門片都由它推算；單位為公分，座標沿用 Sweet Home 3D 檔（x 向東、y 向南）。使用者的設定存在瀏覽器 localStorage。
+單一靜態 HTML 檔，沒有後端與資料庫；另有 PWA 用的 manifest、service worker 與圖示，可加入手機主畫面並離線開啟。牆、門窗、柱與管道間的尺寸集中在 module script 開頭的「平面定義」區塊（依客戶單元圖 DWG 讀取，公分），房間、家具、樑、門片都由它推算；單位為公分，座標沿用 Sweet Home 3D 檔（x 向東、y 向南）。使用者的設定存在瀏覽器 localStorage。
 
 ## 架構圖
 
@@ -78,8 +78,8 @@ flowchart TD
 | ROOMS / FLOOR_PATCHES | 房間地板矩形、材質、尺寸與面積；牆下補片與門檻 |
 | PARTS | 臥室一可切換玻璃隔間的牆段 |
 | LAYOUTS / DINING / TV / SOFA / COFFEE / VITRINE | 家具配置與 IKEA 尺寸 |
-| VAF / VAF2 | 客廳與廚房天花板靜流風機（PDF 位置）：機身、進風格柵、進氣與排風管路徑、嵌在陽台天花板的出風口格柵 |
-| CEIL_PIPES | 天花板明管（照片＋PDF）：平面折線、管徑、高度、末端彎頭、較低的續接段與露台天花板出風格柵（tube 畫水平圓管、soffitGrille 畫格柵） |
+| VAF / VAF2 | 客廳與廚房天花板靜流風機（DWG 位置）：機身、進風格柵、進氣與排風管路徑、嵌在陽台天花板的出風口格柵 |
+| CEIL_PIPES | 天花板明管（DWG 風管圖層＋照片）：平面折線、管徑、高度、末端彎頭、較低的續接段、露台天花板出風格柵或弧形天花板立面的魚眼罩（tube 畫水平圓管、soffitGrille 畫格柵、cap 畫魚眼罩） |
 | LIGHTS / PENDANT | 客戶單元圖的燈具位置與類型（平頂燈、崁燈、壁燈、景觀燈、出線口）；餐廳吊燈（IKEA VÄXJÖ）的吊點、尺寸、電線長度、吊法（掛鉤繞線或出線延伸）與原出線口 |
 | LIVING_N_OUTLETS / SOUTH_OUTLETS / KITCHEN_WALL_DEVICES / B1_WALL_DEVICES / MB_WALL_DEVICES | 牆上原有的開關插座；依擺法判斷是否移位（原位上色、新位置綠色）或原位重新安裝（上色＋綠框，臥室一北牆整面重做時） |
 | CHECKS | 待確認數值清單（勾選狀態存 localStorage，鍵 CHECKS_KEY） |
