@@ -215,6 +215,13 @@ input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px;
               <option value="inside">內裝（後段）</option>
             </select>
           </div>
+          <div class="field">
+            <label for="sel-entryfront">前段（大門旁）</label>
+            <select id="sel-entryfront">
+              <option value="bench">穿鞋椅＋掛鉤＋薄上櫃</option>
+              <option value="cabinet">鞋櫃＋抽屜＋中空層（原方案）</option>
+            </select>
+          </div>
           <p class="lnote">也可以直接點一下玄關櫃後段切換。</p>
         </div>
 
@@ -391,8 +398,7 @@ input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px;
       <ul class="notes">
         <li><a href="https://www.ikea.com.tw/en/products/beds/bed-with-upholstered-headboard/slattum-art-80571270" target="_blank" rel="noopener">SLATTUM 軟墊床框 150×200</a>，Knisa 亮藍，外框 154 × 206，床頭板高 85</li>
         <li><a href="https://www.ikea.com.tw/en/products/beds/bed-with-upholstered-headboard/slattum-art-20571249" target="_blank" rel="noopener">SLATTUM 軟墊床框 180×200</a>，Vissle 深灰，外框 184 × 206，NT$6,999</li>
-        <li><a href="https://www.ikea.com.tw/en/products/wardrobes/open-storage-systems/elvarli-art-20296171" target="_blank" rel="noopener">ELVARLI 立柱 222-350</a> × 3，白色，頂天立地，每支 NT$1,100</li>
-        <li><a href="https://www.ikea.com.tw/en/products/wardrobes/open-storage-systems/elvarli-art-90296177" target="_blank" rel="noopener">ELVARLI 層板 80×51</a> × 5，白色，每片 NT$700；<a href="https://www.ikea.com.tw/en/products/wardrobes/open-storage-systems/elvarli-art-70296215" target="_blank" rel="noopener">掛衣桿 80</a> × 3，每支 NT$150；<a href="https://www.ikea.com.tw/en/products/wardrobes/open-storage-systems/elvarli-art-80296173" target="_blank" rel="noopener">立柱支架 51 cm</a>（2 入）× 8，每包 NT$250（門板與側板由設計師訂做）</li>
+        <li>主臥衣櫃改為訂做款（寬 170 × 深 60 × 高到頂，滑軌摺門，寬度對齊主浴門框）：原 IKEA ELVARLI 兩欄 80 實際需約 175 cm，放不進主浴門框到南牆的 170 cm（2026-11-12）</li>
         <li><a href="https://www.ikea.com.tw/en/products/chests-and-other-furniture/bedside-tables/hattasen-art-60569980" target="_blank" rel="noopener">HATTÅSEN 床頭櫃</a> × 2，白色，27 × 43 × 58（兩層開放層架），每個 NT$599</li>
         <li><a href="https://www.ikea.com.tw/zh/products/dining-tables/tables/pinntorp-art-90529469" target="_blank" rel="noopener">PINNTORP 摺疊桌</a>，松木，桌面淺棕色染色、腳架染白色，67/124 × 75 × 75（一片活動板，可坐 2～4 人），NT$4,999（2026-10-17 線上有貨）</li>
         <li><a href="https://www.ikea.com.tw/zh/products/dining-seating/upholstered-chairs/ikea-ps-2026-art-30617968" target="_blank" rel="noopener">IKEA PS 2026 餐椅</a> × 2（宴客另備 2 張），亮綠色 Knäbäck 布套（可拆洗），44 × 55 × 76（座高 47），每張 NT$2,499</li>
@@ -1124,24 +1130,23 @@ for (const o of LIVING_N_OUTLETS) {
 // 主臥擺法：床架 = 床墊 + 每側 3 cm，床頭板 8 cm；長度 196
 const MB_N = hi('b1S'), MB_E = lo('mE');         // 主臥北牆內面 y（床尾側）、東牆內面 x
 // IKEA 台灣官網尺寸：SLATTUM 150x200 外框 154 × 206、180x200 外框 184 × 206，床頭板高 85、床尾板高 40
-// 衣櫃：IKEA ELVARLI 開放式系統（立柱頂天立地 222～350、層板與掛衣桿 80 寬、深 51），外面由設計師訂做側板與門板
-//   範圍：主臥西牆，從主浴門口（北端留 5 cm 給門框）做到南牆；ELVARLI 置中，兩端剩下的寬度由側板補滿
-//   區塊由北往南：雙層掛衣（襯衫＋褲子）、長掛衣（大衣、洋裝）
-//   門片：設計師訂做的滑軌摺門，doorCols 片落地到頂（上吊鋁軌），每 2 片一組可摺，整組可推到南側或北側任一邊
+// 衣櫃：訂做款（系統櫃或木作；2026-11-12 決定：IKEA ELVARLI 兩欄 80 需約 175、放不進 170），滑軌摺門
+//   範圍：主臥西牆，從主浴門口（北端留 5 cm 給門框）做到南牆，寬度與浴室門框對齊；總深 ROBE_DEPTH（含門片）
+//   內裝由北往南分 2 格（兩側板與中隔板都是 side 厚）：雙層掛衣（襯衫＋褲子）、長掛衣（大衣、洋裝）
+//   門片：滑軌摺門，doorCols 片落地到頂（上吊鋁軌），每 2 片一組可摺，整組可推到南側或北側任一邊
 // 主浴外牆朝主臥那一面（衣櫃靠的牆）原有的開關插座（客戶單元圖 DWG）：at＝平面 y（距主浴門口南緣 25 cm：DWG 插座 JH04D2D 與開關 f 都在 y 788.6）
 //   開關 f（主浴燈）與雙連插座都會被衣櫃蓋住，一起移到衣櫃北側側板外側（同高，開關在上、插座在下）
 const MB_WALL_DEVICES = { at: OP.mbDoor[1] + 25.0, outletH: 30, switchH: 120 };
-const ELVARLI_SECTION_W = 91.6;   // IKEA ELVARLI 單欄組合（2 支立柱＋80 層板）官網實測寬（ikea.com/sg s19157901）；兩欄 80 依此推估約 175（官網另有 175 × 51 的兩欄組合）
+const ROBE_DEPTH = 60;             // 訂做衣櫃總深（含門片；假設值，一般系統衣櫃 60）
 const WARDROBE = (() => {
-  const y0 = OP.mbDoor[1] + 5, y1 = MB_S, post = 2.5, pitch = 82.5, side = 1.8, doorT = 2;
+  const y0 = OP.mbDoor[1] + 5, y1 = MB_S, side = 1.8, doorT = 2, gap = 0.5;
   const sections = [
     { name: '雙層掛衣', rails: [105, 205], shelves: [215, 270] },
     { name: '長掛衣', rails: [175], shelves: [185, 240, 290] },
   ];
-  const elvW = sections.length * pitch + post;
-  const slack = Math.round(((y1 - y0) - 2 * side - elvW) * 10) / 10;   // 可用長度扣兩側板後與 ELVARLI 總寬的差（負值＝放不下；見待確認數值 robe）
-  return { y0, y1, len: y1 - y0, depth: 51, post, pitch, side, doorT, h: WALL_H, doorCols: 4,
-    elv0: y0 + side + (y1 - y0 - 2 * side - elvW) / 2, elvW, slack, sections };
+  const len = y1 - y0, secW = (len - (sections.length + 1) * side) / sections.length;   // 每格內寬（兩側板＋中隔板都是 side 厚）
+  return { type: 'custom', y0, y1, len, depth: ROBE_DEPTH - doorT - gap, side, doorT, gap, h: WALL_H, doorCols: 4, secW, sections,
+    sec: i => { const a = y0 + side + i * (secW + side); return [a, a + secW]; } };   // 第 i 格的 y 範圍（內寬）
 })();
 let robeDoor = 'closed';           // 摺門：closed 關閉、north 收到北側、south 收到南側
 let robeLastSide = 'south';        // 鳥瞰點衣櫃時打開到上次的那一側
@@ -1150,7 +1155,7 @@ const LAYOUTS = {
     name: 'SLATTUM 150×200', sub: 'Knisa 亮藍', w: 154, l: 206, mat: [150, 200],
     left: (161.9 + 333.3) / 2 - 77,             // 置中於兩組插座
     frame: 0x2f6fd6, duvet: 0xf2efe6,
-    note: 'IKEA SLATTUM 150×200（Knisa 亮藍）置中於兩組插座之間，西牆放 IKEA ELVARLI 衣櫃（外加設計師門板）。IKEA 床長 206 cm，比台規長，床尾走道會變窄。',
+    note: 'IKEA SLATTUM 150×200（Knisa 亮藍）置中於兩組插座之間，西牆放訂做衣櫃（滑軌摺門）。IKEA 床長 206 cm，比台規長，床尾走道會變窄。',
   },
   k6: {
     name: 'SLATTUM 180×200', sub: 'Vissle 深灰', w: 184, l: 206, mat: [180, 200],
@@ -1230,28 +1235,19 @@ function buildLayout(key) {
   gapLabel(`床尾 ${Math.round(y0 - MB_N)} cm`, cx, (MB_N + y0) / 2, g);
   gapLabel(`${Math.round(MB_E - x1)} cm`, (x1 + MB_E) / 2, y0 + 110, g);
   {
-    // ELVARLI 立柱靠牆、層板與掛衣桿深 51；設計師側板兩端各一片、門板在 ELVARLI 前方 0.5 cm
-    const W = WARDROBE, wx0 = MB_W + 0.3, ex1 = MB_W + W.depth, fx0 = ex1 + 0.5, fx1 = fx0 + W.doorT;
+    // 訂做衣櫃：兩側板到頂、中隔板與層板橫跨每格、掛衣桿在格內；門板在櫃身前方 gap
+    const W = WARDROBE, wx0 = MB_W + 0.3, ex1 = MB_W + W.depth, fx0 = ex1 + W.gap, fx1 = fx0 + W.doorT;
     const rg = new THREE.Group(), white = furnMat.robe, st = mat.steel;
     box(wx0, fx1, W.y0, W.y0 + W.side, 0, W.h - 0.3, white, furnMat.robeCap, rg);            // 北側板（到頂）
     box(wx0, fx1, W.y1 - W.side, W.y1 - 0.3, 0, W.h - 0.3, white, furnMat.robeCap, rg);      // 南側板
-    // ELVARLI 用 IKEA 官方模型（立柱拉高到頂、層板與掛衣桿轉 90° 沿牆、支架從牆往外伸）；讀不到模型時畫方塊
-    const elv = useModel('elv_post') && useModel('elv_shelf') && useModel('elv_rail') && useModel('elv_bracket');
-    for (let i = 0; i <= W.sections.length; i++) {                                         // ELVARLI 立柱（頂天立地）
-      const p = W.elv0 + i * W.pitch;
-      if (elv) placeModel('elv_post', rg, { x: [wx0, 1], y: p + W.post / 2, fitH: W.h - 0.3 });
-      else box(wx0 + 1, wx0 + 4, p, p + W.post, 0, W.h - 0.3, white, white, rg);
-    }
-    const brackets = (a, b, top) => {                                                      // 每個層板／掛衣桿兩端各一支支架，頂面對齊 top
-      if (!elv) return;
-      for (const yb of [a + 1.5, b - 1.5]) placeModel('elv_bracket', rg, { x: [wx0, 1], y: yb, floor: top - ikeaSize('elv_bracket')[1] });
-    };
+    box(wx0, ex1, W.y0 + W.side, W.y1 - W.side, W.h - 2.1, W.h - 0.3, white, white, rg);     // 頂板
+    box(wx0, ex1, W.y0 + W.side, W.y1 - W.side, 0, W.side, white, white, rg);                // 底板
+    for (let i = 1; i < W.sections.length; i++) { const [, b] = W.sec(i - 1); box(wx0, ex1, b, b + W.side, W.side, W.h - 2.1, white, white, rg); }   // 中隔板
     const cloth = [0xd8632a, 0x2f7f86, 0xe0a526, 0x3d4f8f, 0xc8402a, 0x6b8f3a];               // 示意衣物（跳色）
     W.sections.forEach((sc, i) => {
-      const a = W.elv0 + i * W.pitch + W.post, b = W.elv0 + (i + 1) * W.pitch;
+      const [a, b] = W.sec(i);
       for (const sh of sc.shelves) {
-        if (elv) { placeModel('elv_shelf', rg, { x: [wx0, 1], y: (a + b) / 2, rot: ROT.E, floor: sh }); brackets(a, b, sh); }   // 層板 80×51
-        else box(wx0, ex1, a + 0.3, b - 0.3, sh, sh + 2.5, white, white, rg);
+        box(wx0, ex1, a + 0.3, b - 0.3, sh, sh + 2.5, white, white, rg);                     // 層板（橫跨整格）
         let k = 0;
         for (let yy = a + 3; yy + 26 < b; yy += 27) {                                      // 摺疊衣物
           const m = new THREE.MeshStandardMaterial({ color: cloth[(i * 3 + k++) % cloth.length], roughness: 0.9 });
@@ -1260,8 +1256,7 @@ function buildLayout(key) {
       }
       sc.rails.forEach((rh, j) => {
         const rx = MB_W + W.depth / 2;
-        if (elv) { placeModel('elv_rail', rg, { x: rx, y: (a + b) / 2, rot: ROT.E, floor: rh - 1.4 }); brackets(a, b, rh + 1.4); }   // 掛衣桿 80
-        else box(rx - 1, rx + 1, a + 0.5, b - 0.5, rh - 1, rh + 1, st, st, rg);
+        box(rx - 1, rx + 1, a + 0.5, b - 0.5, rh - 1, rh + 1, st, st, rg);                   // 掛衣桿
         const len = sc.rails.length === 1 ? 110 : (j === 0 ? 62 : 78);                       // 長掛 110；雙層：下層褲子 62、上層襯衫 78
         for (let yy = a + 6, k = 0; yy + 3 < b - 4; yy += 9, k++) {                          // 衣架上的衣服（垂直於掛衣桿）
           const m = new THREE.MeshStandardMaterial({ color: cloth[(i + j * 2 + k) % cloth.length], roughness: 0.9 });
@@ -1301,7 +1296,7 @@ function buildLayout(key) {
     gapLabel(`${Math.round(x0 - fx1)} cm`, (fx1 + x0) / 2, y0 + 110, g);
     const wl = document.createElement('div');
     wl.className = 'lbl';
-    wl.innerHTML = `IKEA ELVARLI＋滑軌摺門<small>${Math.round(W.len)} × ${Math.round(fx1 - MB_W)} × ${W.h}（到頂）· 點一下開關</small>`;
+    wl.innerHTML = `訂做衣櫃（寬度對齊浴室門框）＋滑軌摺門<small>${Math.round(W.len)} × ${Math.round(fx1 - MB_W)} × ${W.h}（到頂）· 點一下開關</small>`;
     const wo = new CSS2DObject(wl);
     { const [px, pz] = P((MB_W + fx1) / 2, (W.y0 + W.y1) / 2); wo.position.set(px, 2.5, pz); }
     g.add(wo);
@@ -1658,7 +1653,25 @@ function buildTV() {
 //   guest：活動板掀起在牆側、整張桌子往南移 57，長 124，每側 2 張椅子（南端可再加 1 張）；冰箱旁同理，活動板收在冰箱那一側
 // 長邊南北向、偏東放，西側留走道通往後陽台門（252～343）與玄關；廚房開口在南側
 // 餐椅：IKEA PS 2026（亮綠色/Knäbäck 亮綠色，44 × 55 × 76，座寬 38、座深 38、座高 47，軟墊座面與靠背，實木漆腳）
-const DINING = { cx: 410.7, w: 75, h: 75, body: 67, leaf: 57, wall: hi('dinN'), chairW: 44, chairD: 55, chairH: 76, seat: 47, tuck: 10, tuckIn: 36 };
+const DINING = { cx: 410.7, w: 75, h: 75, body: 67, leaf: 57, wall: hi('dinN'), chairW: 44, chairD: 55, chairH: 76, seat: 47, tuck: 10, tuckIn: 36 };
+// 餐廳北牆嵌牆配電箱（DWG EA3 方塊 x 348.1～408.1、深 18 = 牆厚；2026-11-12 使用者確認是配電箱，實際尺寸與離地高度待照片／現場量）
+//   處理：木作飾板包板（可拆或掀開，四周各多 pad），與餐桌靠的同一面牆；餐桌高 75、飾板在桌面之上，不影響餐桌靠牆
+const DIST_BOX = { x0: 348.1, x1: 408.1, z0: 140, z1: 180, pad: 5, t: 1.8 };   // z0／z1 暫定（一般住宅分電盤離地約 140～180）
+{
+  const D = DIST_BOX, face = hi('dinN'), g = new THREE.Group();
+  const door = new THREE.MeshStandardMaterial({ color: 0x9a9da0, roughness: 0.4, metalness: 0.5 });
+  const oak = new THREE.MeshStandardMaterial({ color: 0xc9a67a, roughness: 0.6 });
+  box(D.x0, D.x1, face - 1, face + 0.3, D.z0, D.z1, door, door, g);                                                        // 配電箱門板（嵌在牆內，略凸出牆面）
+  box(D.x0 - D.pad, D.x1 + D.pad, face + 0.3, face + 0.3 + D.t, D.z0 - D.pad, D.z1 + D.pad, oak, oak, g);                   // 木作飾板（包板）
+  box(D.x1 + D.pad - 3, D.x1 + D.pad - 1, face + 0.3 + D.t, face + 0.3 + D.t + 1.2, (D.z0 + D.z1) / 2 - 4, (D.z0 + D.z1) / 2 + 4, mat.steel, mat.steel, g);   // 小把手
+  const el = document.createElement('div');
+  el.className = 'lbl';
+  el.innerHTML = `配電箱包板<small>配電箱約 ${Math.round(D.x1 - D.x0)} × ${D.z1 - D.z0}（高度暫定，待照片）· 木作飾板可拆</small>`;
+  const o = new CSS2DObject(el);
+  { const [px, pz] = P((D.x0 + D.x1) / 2, face + 2); o.position.set(px, M(D.z1 + D.pad + 8), pz); }
+  g.add(o);
+  scene.add(g);
+}
 // 餐廳吊燈：IKEA VÄXJÖ（米色烤漆鋁燈罩，ø38 × 高 26，電線 1.5 m，E27 最大 22 W，NT$999）取代原平頂燈 b，吊在餐桌中線正上方
 //   原出線口（PDF 位置）不動；吊點 y 與出線口相同，介於摺起桌心（約 282）與延伸桌心（約 311）之間；目標燈罩底離地 target
 //   吊法依電線長度自動選：swag＝出線口裝天花板座、電線沿天花板到掛鉤（膨脹螺絲）再垂下（IKEA 建議掛法，電線要夠長）；
@@ -2279,23 +2292,34 @@ const GRILLE_H = 100;
 
 
 // 玄關櫃（前淺後深，沿玄關南牆內面 lo('entS')），兩段都做到天花板（WALL_H）：
-//   前段（靠大門）x 30～131.6：深 36，與大門南側內凹（約 36）同深——大門鉸鏈在北側往內開，門片外緣轉動時掃到南側約 y 468，前段櫃面要退到這條線後面才不卡門。90～135 為 45 cm 中空開放層（露出牆上 FL+120 的開關與控制面板），
+//   前段（靠大門）x 30～131.6：深 35，與大門南側內凹（DWG 約 35、現場量不到 30）同深；預設改做穿鞋椅（ENTRY_BENCH，可切回鞋櫃方案）——大門鉸鏈在北側往內開，門片外緣轉動時掃到南側約 y 468，前段櫃面要退到這條線後面才不卡門。90～135 為 45 cm 中空開放層（露出牆上 FL+120 的開關與控制面板），
 //     中空正下方左右兩個抽屜（鑰匙、口罩、證件），抽屜下方為鞋櫃（左右門），櫃底懸空 25 放常穿的鞋；懸空處與中空開放層都有 LED 間接照明；中空以上為上櫃
 //   後段（往餐廳）x 131.6～厚外牆北端西面（與牆面切齊）：深 45，落地到天花板整面封閉收納（鞋子、外套、吸塵器）
 // 後段東端與厚外牆北端（thickN）的西側面切齊，內縮 0.3 避免共平面閃動
-const ENTRY_CAB = { wall: lo('entS'), fx0: hi('entW') + 3.1, split: 126.6, bx1: lo('thickN') - 0.3, fd: 35, lift: 25, bd: 45, bh: WALL_H, niche: [90, 135], drawerRow: [72, 90], midSplit: 110 };   // 抽屜左右並排一排（72～90），下方 25～72 為鞋櫃
+const ENTRY_CAB = { wall: lo('entS'), fx0: hi('entW') + 3.1, split: 126.6, bx1: lo('thickN') - 0.3, fd: 35, lift: 25, bd: 45, bh: WALL_H, niche: [90, 135], drawerRow: [72, 90], midSplit: 110 };   // 抽屜左右並排一排（72～90），下方 25～72 為鞋櫃
+// 前段方案（2026-11-12）：大門南側內凹只有約 30～35 cm（現場量不到 30），放不下一般鞋櫃（需 35～40），預設改做穿鞋椅＋掛鉤板＋薄上櫃；可切回原鞋櫃方案比較
+//   座面離地 seatH（橡木，厚 seatT）、座下左右兩個抽屜（lift 以上到座面下）、底部懸空 lift 放常穿的鞋（LED 同原方案）
+//   掛鉤板：橡木橫板離地 hookH、hooks 個掛鉤（包包、外套）；薄上櫃：深 upperD、離地 upperZ0 到天花板（換季小物），底部 LED 照座面
+const ENTRY_BENCH = { seatH: 45, seatT: 3, hookH: 150, hooks: 4, upperZ0: 170, upperD: 30 };
+let entryFront = 'bench';          // bench = 穿鞋椅方案、cabinet = 原鞋櫃方案
 // 上櫃與下櫃層板橫跨整個櫃寬；只有中櫃（hangBottom～hangTop）有中隔板：吊掛區＋層板區
 // 下櫃 5 層、上櫃 4 層放鞋（鞋尖朝內、鞋跟朝外），層板橫跨整個櫃寬；中櫃 hangBottom～hangTop 有中隔板
 const ENTRY_BACK = { hangW: 60, hangTop: 240, hangBottom: 100, shoeLevels: [1.8, 20, 40, 60, 80, 240, 262, 285, 307], fullShelves: [20, 40, 60, 80, 100, 240, 262, 285, 307], midShelves: [147, 194], handles: [85, 165, 255] };   // 兩區門片同高分割，把手同高
-{
-  const g = new THREE.Group(), E = ENTRY_CAB;
+let entryFrontGroup = null;
+function buildEntryFront() {
+  if (entryFrontGroup) {
+    entryFrontGroup.traverse(o => { if (o.isCSS2DObject) o.element.remove(); o.geometry && o.geometry.dispose(); if (o.material && o.material.map) o.material.map.dispose(); });
+    scene.remove(entryFrontGroup);
+  }
+  const g = new THREE.Group(), E = ENTRY_CAB, B = ENTRY_BENCH, bench = entryFront === 'bench';
   const white = new THREE.MeshStandardMaterial({ color: 0xf2f1ec, roughness: 0.55 });
   const oak = new THREE.MeshStandardMaterial({ color: 0xc9a67a, roughness: 0.6 });
   const seam = new THREE.MeshStandardMaterial({ color: 0xd9d7d0, roughness: 0.6 });
   const pull = new THREE.MeshStandardMaterial({ color: 0x8c8f91, roughness: 0.35, metalness: 0.5 });
   // 相接的零件一律內縮 0.3 cm，不與高櫃側面共平面（雙面顯示時共平面會互搶閃動）
   const sp = E.split - 0.3, fy0 = E.wall - E.fd, xm = E.fx0 + (sp - E.fx0) / 2;
-  // ── 前段（中空＋抽屜）──
+  if (!bench) {
+  // ── 前段（原方案：中空＋抽屜＋鞋櫃）──
   box(E.fx0, sp, fy0, E.wall, E.lift, E.niche[0] - 3, white, white, g);                  // 下櫃（抽屜＋鞋櫃）
   box(E.fx0, sp, fy0 - 1, E.wall - 0.3, E.niche[0] - 3, E.niche[0], oak, oak, g);        // 中空底板（橡木檯面）
   box(E.fx0, sp, fy0, E.wall, E.niche[1], E.bh, white, white, g);                         // 上櫃
@@ -2309,6 +2333,22 @@ const ENTRY_BACK = { hangW: 60, hangTop: 240, hangBottom: 100, shoeLevels: [1.8,
     box(xm - 0.3, xm + 0.3, fy0 - 0.2, fy0, E.lift + 2, d0 - 1, seam, seam, g);          // 鞋櫃左右門分割線
   }
   box(xm - 0.3, xm + 0.3, fy0 - 0.2, fy0, E.niche[1] + 2, E.bh - 2, seam, seam, g);          // 上櫃門分割線
+  } else {
+    // ── 前段（穿鞋椅方案）──：座下抽屜＋橡木座面、掛鉤板、薄上櫃；懸空處照舊
+    const seat0 = B.seatH - B.seatT, dc = (E.lift + seat0) / 2;
+    box(E.fx0, sp, fy0, E.wall, E.lift, seat0, white, white, g);                                  // 座下櫃體（左右兩個抽屜）
+    box(E.fx0, sp, fy0 - 1, E.wall - 0.3, seat0, B.seatH, oak, oak, g);                           // 座面（橡木，前緣凸 1 cm）
+    box(xm - 0.3, xm + 0.3, fy0 - 0.2, fy0, E.lift + 0.5, seat0 - 0.5, seam, seam, g);            // 抽屜左右分割線
+    for (const cx of [(E.fx0 + xm) / 2, (xm + sp) / 2]) box(cx - 7, cx + 7, fy0 - 1.5, fy0, dc - 0.8, dc + 0.8, pull, pull, g);   // 抽屜把手
+    box(E.fx0, sp, E.wall - 2, E.wall, B.hookH - 5, B.hookH + 5, oak, oak, g);                   // 掛鉤板（橡木橫板）
+    for (let i = 0; i < B.hooks; i++) {                                                           // 掛鉤（L 形）
+      const hx = E.fx0 + (sp - E.fx0) * (i + 0.5) / B.hooks;
+      box(hx - 1, hx + 1, E.wall - 7, E.wall - 2, B.hookH - 1, B.hookH + 1, pull, pull, g);
+      box(hx - 1, hx + 1, E.wall - 7, E.wall - 5, B.hookH - 4, B.hookH + 1, pull, pull, g);
+    }
+    box(E.fx0, sp, E.wall - B.upperD, E.wall, B.upperZ0, E.bh, white, white, g);                 // 薄上櫃（深 upperD，離地 upperZ0 到頂）
+    box(xm - 0.3, xm + 0.3, E.wall - B.upperD - 0.2, E.wall - B.upperD, B.upperZ0 + 2, E.bh - 2, seam, seam, g);   // 上櫃門分割線
+  }
   {
     // 間接照明：懸空處（櫃底）與中空開放層（上櫃底部）各一條 LED 燈條＋暖色光暈（靠牆最亮、往外漸淡）＋小範圍點光源
     const led = new THREE.MeshBasicMaterial({ color: 0xfff1d6 });
@@ -2329,25 +2369,35 @@ const ENTRY_BACK = { hangW: 60, hangTop: 240, hangBottom: 100, shoeLevels: [1.8,
       { const [px, pz] = P((E.fx0 + sp) / 2, E.wall - 10); pl.position.set(px, M(stripH - 4), pz); }
       g.add(pl);
     };
-    lightUp(E.lift, 0, E.fd + 18, 0.5);                              // 懸空處：照在地面，往外多延伸 18 cm
-    lightUp(E.niche[1], E.niche[0], E.fd, 0.4);                      // 中空開放層：照在橡木檯面
+    lightUp(E.lift, 0, E.fd + 18, 0.5);                              // 懸空處：照在地面，往外多延伸 18 cm（兩種方案都有）
+    if (bench) lightUp(B.upperZ0, B.seatH, E.fd, 0.4);               // 穿鞋椅：上櫃底部 LED 照在座面
+    else lightUp(E.niche[1], E.niche[0], E.fd, 0.4);                 // 中空開放層：照在橡木檯面
   }
   const by0 = E.wall - E.bd;
   // 前段與後段交接的側板（後段比前段深 15 cm）
   box(E.split - 1.5, E.split - 0.3, by0 + 0.3, fy0 - 0.3, 0.3, E.bh - 0.3, white, white, g);
   const el = document.createElement('div');
   el.className = 'lbl';
-  el.innerHTML = `玄關櫃<small>前段深 ${E.fd}・中空 ${E.niche[0]}～${E.niche[1]}＋左右抽屜＋鞋櫃 ／ 後段深 ${E.bd}・吊掛區＋層板區（點一下看內裝）</small>`;
+  el.innerHTML = bench
+    ? `玄關櫃<small>前段深 ${E.fd}・穿鞋椅（座高 ${B.seatH}）＋掛鉤板＋薄上櫃 ／ 後段深 ${E.bd}・吊掛區＋層板區（點一下看內裝）</small>`
+    : `玄關櫃<small>前段深 ${E.fd}・中空 ${E.niche[0]}～${E.niche[1]}＋左右抽屜＋鞋櫃 ／ 後段深 ${E.bd}・吊掛區＋層板區（點一下看內裝）</small>`;
   // 目前配置：玄關說明
-  document.getElementById('sum-entry').textContent = `玄關櫃（前淺 ${E.fd}／後深 ${E.bd} cm，到天花板）`;
+  document.getElementById('sum-entry').textContent = `玄關櫃（前段${bench ? '穿鞋椅' : '淺 ' + E.fd}／後深 ${E.bd} cm，到天花板）`;
   document.getElementById('entry-note').innerHTML =
     `<li>沿玄關南牆，總長約 ${Math.round(E.bx1 - E.fx0)} 公分，分前後兩段，都做到天花板（高度：${E.bh} 公分）。大門鉸鏈在北側、往內開，門片寬約 ${Math.round(OP.mainDoor[1] - OP.mainDoor[0])} 公分，開關時外緣會掃到南側內凹的位置（約 ${Math.round(lo('entS') - OP.mainDoor[1])} 公分），所以門片掃過的範圍內前段做淺（與內凹同深），過了這個範圍才變深。</li>` +
-    `<li>前段（靠大門，長約 ${Math.round(E.split - E.fx0)} 公分、深 ${E.fd} 公分），由下往上：` +
+    (bench
+    ? `<li>前段（靠大門，長約 ${Math.round(E.split - E.fx0)} 公分、深 ${E.fd} 公分）改做穿鞋椅：大門南側內凹只有約 ${Math.round(lo('entS') - OP.mainDoor[1])} 公分（現場量不到 30），放不下一般鞋櫃（需 35～40 公分）。由下往上：` +
+      `懸空（高度：${E.lift} 公分，LED 間接照明，放常穿的鞋）、` +
+      `座下左右兩個抽屜（高度：${B.seatH - B.seatT - E.lift} 公分，放鞋油、拖鞋、雨傘）、` +
+      `橡木座面（離地 ${B.seatH} 公分、深 ${E.fd} 公分）、` +
+      `掛鉤板（離地 ${B.hookH} 公分，${B.hooks} 個掛鉤掛包包與外套；牆上的開關與淨流風機控制面板在座面與上櫃之間露出）、` +
+      `薄上櫃（深 ${B.upperD} 公分，離地 ${B.upperZ0} 公分到天花板，放換季小物，底部 LED 燈條照座面）。可在區域設定切回原鞋櫃方案比較。</li>`
+    : `<li>前段（靠大門，長約 ${Math.round(E.split - E.fx0)} 公分、深 ${E.fd} 公分），由下往上：` +
       `懸空（高度：${E.lift} 公分，LED 間接照明，可放常穿的鞋）、` +
       `鞋櫃左右門（高度：${E.drawerRow[0] - E.lift} 公分）、` +
       `左右兩個抽屜（高度：${E.drawerRow[1] - E.drawerRow[0]} 公分，放鑰匙、口罩、證件）、` +
       `中空開放層（高度：${E.niche[1] - E.niche[0]} 公分，上櫃底部有 LED 燈條，橡木檯面放包包，牆上的開關與淨流風機控制面板露在這裡）、` +
-      `上櫃（高度：${E.bh - E.niche[1]} 公分）。</li>` +
+      `上櫃（高度：${E.bh - E.niche[1]} 公分）。</li>`) +
     `<li>後段（往餐廳，長約 ${Math.round(E.bx1 - E.split)} 公分、深 ${E.bd} 公分，到天花板），門片在同樣高度分三段、把手左右同高靠中間：` +
       `下櫃（高度：${ENTRY_BACK.hangBottom} 公分）層板橫跨整個櫃寬，分 5 層放鞋；` +
       `中櫃（高度：${ENTRY_BACK.hangTop - ENTRY_BACK.hangBottom} 公分）以中隔板分成吊掛區寬 ${ENTRY_BACK.hangW} 公分（側拉掛衣桿）與層板區寬約 ${Math.round(E.bx1 - E.split - ENTRY_BACK.hangW - 3 * 1.8)} 公分（摺疊衣物）；` +
@@ -2358,8 +2408,10 @@ const ENTRY_BACK = { hangW: 60, hangTop: 240, hangBottom: 100, shoeLevels: [1.8,
   const o = new CSS2DObject(el);
   { const [px, pz] = P((E.fx0 + E.bx1) / 2, E.wall - 30); o.position.set(px, 1.5, pz); }
   g.add(o);
+  entryFrontGroup = g;
   scene.add(g);
 }
+buildEntryFront();
 
 // 玄關櫃後段（x 131.6～227.9，長約 96、深 45、到天花板）：可切換「外觀」（關門）與「內裝」（拿掉門片）
 //   上櫃與下櫃層板橫跨整個櫃寬（不分區）；只有中櫃有中隔板：吊掛區（側拉掛衣桿，掛一件完整外套示意）＋層板區（摺疊衣物）
@@ -3048,6 +3100,15 @@ function setKitchen(open) {
 }
 document.getElementById('sel-kitchen').addEventListener('change', e => setKitchen(e.target.value === 'open'));
 document.getElementById('sel-entry').addEventListener('change', e => { entryInterior = e.target.value === 'inside'; buildEntryBack(); });
+// 玄關前段方案：穿鞋椅（預設）／原鞋櫃；切換後重畫前段並存設定
+function setEntryFront(mode, quiet) {
+  const next = mode === 'cabinet' ? 'cabinet' : 'bench', changed = next !== entryFront;
+  entryFront = next;
+  document.getElementById('sel-entryfront').value = entryFront;
+  if (changed || !quiet) buildEntryFront();
+  if (!quiet) saveSettings();
+}
+document.getElementById('sel-entryfront').addEventListener('change', e => setEntryFront(e.target.value));
 buildDining('daily');
 
 const waist = document.getElementById('waist'), waistOut = document.getElementById('waist-out');
@@ -3197,6 +3258,7 @@ function saveSettings() {
     part: { mode: partition.mode, frame: partition.frame, glass: partition.glassType, waist: partition.waist },
     b1ceil: b1Ceil,
     mbbox: mbBox,
+    entryfront: entryFront,
     view: document.getElementById('sel-view').value,
     cut: +cut.value, sunAz: +sunAz.value, sunEl: +sunEl.value, spin: spin.checked,
     wall: wallColor,
@@ -3235,6 +3297,7 @@ function loadSettings() {
     furnStyle = pick(s.furn, ['model', 'box'], 'model'); document.getElementById('sel-furn').value = furnStyle;
     setB1Ceil(pick(s.b1ceil, ['flat', 'exposed'], 'flat'), true);
     setMbBox(pick(s.mbbox, ['box', 'exposed'], 'box'), true);
+    setEntryFront(pick(s.entryfront, ['bench', 'cabinet'], 'bench'), true);
     setKitchen(typeof s.kitchen === 'boolean' ? s.kitchen : true);
     updatePartitionUI();
     rebuild(+cut.value);
@@ -3560,13 +3623,15 @@ function quoteMeasure() {
     tvNorth: living.swap,
     tvWall: { tvCx: Math.round(TV.cx - hi('livW')), ctv: LIVING_N_OUTLETS[1].at, power: [LIVING_N_OUTLETS[0].at, LIVING_N_OUTLETS[3].at] },
     layout: document.getElementById('sel-layout').value,
-    entry: { front: r1(E.split - E.fx0), back: r1(E.bx1 - E.split), fd: E.fd, bd: E.bd, niche: E.niche[1] - E.niche[0], lift: E.lift },
+    entry: { front: r1(E.split - E.fx0), back: r1(E.bx1 - E.split), fd: E.fd, bd: E.bd, niche: E.niche[1] - E.niche[0], lift: E.lift,
+      bench: entryFront === 'bench', seatH: ENTRY_BENCH.seatH, hookH: ENTRY_BENCH.hookH, upperZ0: ENTRY_BENCH.upperZ0, upperD: ENTRY_BENCH.upperD },
     cabinet: { len: r1(cabLen), d: C.d, h0: BEAM_BOTTOM },
     robeDevices: { fromDoor: Math.round(MB_WALL_DEVICES.at - OP.mbDoor[1]), outletH: MB_WALL_DEVICES.outletH, switchH: MB_WALL_DEVICES.switchH },
     pipes: { z: PIPE_Z, r: PIPE_R },
     mbBox: { on: mbBox === 'box', len: Math.round((lo('mE') - hi('mbW')) * 10) / 10, w: Math.round((MB_BOX.y1 - hi('kS')) * 10) / 10, drop: WALL_H - MB_BOX.z0,
       alcoveArea: Math.round((lo('b1W') - hi('kE')) * (hi('kS') - hi('mDoor')) / 100) / 100 },   // 門內走道平釘天花 m²
-    robe: { len: Math.round(WARDROBE.len * 10) / 10, h: WARDROBE.h, posts: WARDROBE.sections.length + 1,
+    distBox: { w: Math.round(DIST_BOX.x1 - DIST_BOX.x0), h: DIST_BOX.z1 - DIST_BOX.z0, z0: DIST_BOX.z0, z1: DIST_BOX.z1, pad: DIST_BOX.pad },   // 餐廳配電箱包板（高度暫定）
+    robe: { type: WARDROBE.type, len: Math.round(WARDROBE.len * 10) / 10, d: ROBE_DEPTH, h: WARDROBE.h, sections: WARDROBE.sections.length,
       shelves: WARDROBE.sections.reduce((s, x) => s + x.shelves.length, 0), rails: WARDROBE.sections.reduce((s, x) => s + x.rails.length, 0),
       panels: WARDROBE.doorCols },
     entryMat: { area: Math.round(ENTRY_MAT.rects.reduce((s, [a, b, c, d]) => s + (b - a) * (d - c), 0) / 100) / 100 },   // m²
@@ -3597,8 +3662,8 @@ const CHECKS = [
   { id: 'door-h', text: '室內門、大門高度 210 cm', note: '門片與門檻高度' },
   { id: 'win', text: '主臥、臥室一東窗：窗台 60、窗頂 220 cm；客浴窗 110～210 cm', note: '依實品屋照片推估' },
   { id: 'slide', text: '落地窗頂：客廳 255、餐廳往後陽台的鋁門 240 cm', note: '依實品屋照片推估' },
-  { id: 'entry-recess', text: `大門南側內凹約 ${Math.round(lo('entS') - OP.mainDoor[1])} cm、玄關櫃前段深 ${ENTRY_CAB.fd} cm`, note: '門片轉動時會不會碰到玄關櫃，現場量內凹深度' },
-  { id: 'robe', text: `主臥西牆衣櫃可用長度 ${Math.round(WARDROBE.len)} cm（門框外緣 y ${OP.mbDoor[1] + 5} 到南牆面）；模型 ELVARLI 兩欄以立柱間距 ${WARDROBE.pitch} 畫、含側板共 ${Math.round((WARDROBE.elvW + 2 * WARDROBE.side) * 10) / 10}，${WARDROBE.slack >= 0 ? '剩' : '超出'} ${Math.abs(WARDROBE.slack)} cm；IKEA 單欄組合實測寬 ${ELVARLI_SECTION_W}（2 支立柱＋80 層板），兩欄 80 推估約 175，放不下`, note: '待裁示：改 80＋40 兩欄（約 135）、縮短側板或改訂做；摺門片數與軌道規格請設計師確認' },
+  { id: 'entry-recess', text: `大門南側內凹約 ${Math.round(lo('entS') - OP.mainDoor[1])} cm（DWG 門口南緣到南牆面；現場量不到 30）、玄關櫃前段深 ${ENTRY_CAB.fd} cm`, note: `放不下一般鞋櫃（需 35～40），前段預設改穿鞋椅（座面離地 ${ENTRY_BENCH.seatH}）；門片轉動時會不會碰到前段，現場量內凹深度與門框位置` },
+  { id: 'robe', text: `主臥訂做衣櫃：寬 ${Math.round(WARDROBE.len)}（主浴門框外緣 y ${OP.mbDoor[1] + 5} 到南牆面，與浴室門框對齊）× 深 ${ROBE_DEPTH}（含門片）× 高 ${WARDROBE.h}（到頂）；內分 ${WARDROBE.sections.length} 格、每格內寬約 ${Math.round(WARDROBE.secW)}`, note: '深 60 為假設值；系統櫃或木作、摺門片數、到頂做法請設計師與廠商確認（原 IKEA ELVARLI 兩欄 80 需約 175 放不下，2026-11-12 改訂做）' },
   { id: 'switch-dbc', text: '廚房北牆開關組 d、b、c 的實際位置', note: '圖面圓點畫在離牆約 30 cm 處' },
   { id: 'vaf', text: `客廳靜流風機 VAF：機身 ${Math.round(VAF.w)} × ${Math.round(VAF.d)}（圖面），高度暫以 ${VAF.h} cm 畫；排風管 ø${VAF.duct.r * 2} 穿東側大樑線與落地窗上方外牆、藏在弧形天花板裡，出風格柵接在風管下方、嵌在天花板底面，外面只看到格柵（外牆外 ${Math.round(VAF.duct.outX - hi('livE'))} cm 起，約 ${Math.round(VAF.hood.w)} × ${Math.round(VAF.hood.d)}，依現場照片）`, note: '圖面風管直接穿過樑線，假設建商有預留套管；格柵位置依圖面出風口矩形，機身高度與風管實際走法請現場確認' },
   { id: 'pipes', text: `天花板明管：廚房到臥室一 2 支、主浴到主臥 1 支，白色約 ø15、管中心離地 ${PIPE_Z}；位置依 DWG 風管圖層：廚房 VAF 排風管 y 582.2、抽油煙機排風管 y 627.1（兩支相距 45 cm）、主浴排風管 y 721.1；廚房 VAF 與主浴排風管穿東外牆到側廊／露台天花板的方形格柵，抽油煙機排風管到小弧形天花板東立面的魚眼罩（DWG）`, note: `煙囪頂到天花板的直立段穿過廚房降板天花；臥室一平頂燈 h 距 VAF 排風管中心約 ${Math.round(Math.abs(582.2 - 564.8))} cm，燈具尺寸要配合；照片中兩支管在大樑前以彎頭收尾，推測彎頭後接較低的套管，請現場確認` },
@@ -3611,7 +3676,8 @@ const CHECKS = [
   { id: 'milsbo', text: 'MILSBO 實際寬度：官網 73 cm、3D 模型 81.5 cm', note: '影響電視櫃左側到牆的距離' },
   { id: 'sofa', text: `STOCKHOLM 沙發深度：官網 88 cm、3D 模型約 94 cm；西端凸出臥室一牆角約 ${Math.round(lo('b1W') - SOFA.x0)} cm`, note: '影響咖啡桌走道與走道入口寬度' },
   { id: 'dwg', text: '平面定義已依客戶單元圖 DWG（公分、1:1）重建：牆、門窗、柱、風管直接取圖面值', note: '燈具、插座、樑、陽台等原本從 PDF 量的項目以 x×0.952、y×0.951 校正後保留，與現場仍可能有 1～3 cm 差異；原 PDF 換算整體偏大約 5%，已修正' },
-  { id: 'dwg-extra', text: '餐廳北牆 x 348～408 有 60 × 18 嵌牆箱體（DWG EA3，疑配電箱），在靠牆餐桌（x 373～448）正後方；另有客浴排氣管沿後陽台天花（y≈110）到冷氣區魚眼罩、玄關南牆北面的開關 a／c、淨流控制器與插座在玄關櫃後方', note: '模型未畫；箱體若是配電箱，餐桌靠牆與吊燈配置要留維修面，玄關櫃背板要留開口，請現場確認用途與高度' },
+  { id: 'distbox', text: `餐廳北牆配電箱（DWG x ${DIST_BOX.x0}～${DIST_BOX.x1}、寬 ${Math.round(DIST_BOX.x1 - DIST_BOX.x0)}；離地高度暫定 ${DIST_BOX.z0}～${DIST_BOX.z1}）以木作飾板包板，在靠牆餐桌（x 373～448）正後方、桌面之上`, note: '實際尺寸與高度待照片／現場量；飾板可拆或掀開，留維修與操作空間；餐桌靠牆時飾板在桌面之上，不必移桌' },
+  { id: 'dwg-extra', text: 'DWG 另有：客浴排氣管沿後陽台天花（y≈110）到冷氣區魚眼罩；玄關南牆北面的開關 a／c（x 48）、淨流控制器（x 86）在玄關櫃前段的座面與上櫃之間露出，插座（x 168）在後段櫃後方', note: '模型未畫；後段櫃背板要留插座開口，請現場確認各裝置高度' },
   { id: 'docs', text: '向建商或管委會索取水電配置圖、結構圖', note: '確認拆除的牆不是結構牆、樑位與樑深、管線走向' },
 ];
 {
