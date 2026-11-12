@@ -572,6 +572,8 @@ const MB_BOX = { y1: 739.7, z0: B1_FLAT };
 let mbBox = 'box';
 // ================= 平面定義結束 =================
 
+// 餐廳往後陽台鋁門的門檻與框頂高：原估 240 偏高，依 2026-11-12 配電箱照片換算框高約 200～220（鏡頭焦距不確定），取常見規格 90 × 210、門檻約 10
+const DIN_DOOR = { sill: 10, head: 210 };
 const WALLS = [
   // ext = 朝外那一面（N/S/E/W），該面固定用外牆磚；trimA / trimB = 該端不外延（同一直線拆段的交界）
   // extA / extB = 端點外延量（較厚的牆接到較薄的牆時，改用薄牆的半厚，才不會凸出薄牆另一面）
@@ -608,7 +610,7 @@ const WALLS = [
   // 主臥門：橫跨走道南端
   { a: [WL.kE.c, WL.mDoor.c], b: [WL.b1W.c, WL.mDoor.c], t: WL.mDoor.t, open: [{ from: OP.mDoor[0], to: OP.mDoor[1] }] },
   // 餐廳 / 客廳
-  { a: [WL.gbE.c, WL.dinN.c], b: [WL.livW.c, WL.dinN.c], t: WL.dinN.t, ext: 'N', extA: WL.gbE.t / 2 - 0.3, extB: WL.livW.t / 2 - 0.3, tileEndB: false, open: [{ from: OP.dinDoor[0], to: OP.dinDoor[1], sill: 8, head: 240, style: 'frame' }] },   // 單扇鋁門（門片由 DOORS 畫，往後陽台開、靠客浴牆）
+  { a: [WL.gbE.c, WL.dinN.c], b: [WL.livW.c, WL.dinN.c], t: WL.dinN.t, ext: 'N', extA: WL.gbE.t / 2 - 0.3, extB: WL.livW.t / 2 - 0.3, tileEndB: false, open: [{ from: OP.dinDoor[0], to: OP.dinDoor[1], sill: DIN_DOOR.sill, head: DIN_DOOR.head, style: 'frame' }] },   // 單扇鋁門（門片由 DOORS 畫，往後陽台開、靠客浴牆）
   { a: [WL.livW.c, WL.livN.c], b: [WL.livW.c, WL.dinN.c], t: WL.livW.t, ext: 'W', extB: WL.dinN.t / 2 - 0.3 },   // 南端伸到餐廳北牆南面內 0.3，蓋住餐廳北牆東端
   { a: [WL.livW.c, WL.livN.c], b: [WL.livE.c, WL.livN.c], t: WL.livN.t, ext: 'N' },
   { a: [WL.livE.c, WL.livN.c], b: [WL.livE.c, WL.b1Nx.c], t: WL.livE.t, ext: 'E', open: [{ from: OP.livDoor[0], to: OP.livDoor[1], sill: 8, head: 255, style: 'slide-door', sliding: true }] },   // 兩片門片由 SLIDERS 畫，可開關
@@ -1655,19 +1657,37 @@ function buildTV() {
 // 長邊南北向、偏東放，西側留走道通往後陽台門（252～343）與玄關；廚房開口在南側
 // 餐椅：IKEA PS 2026（亮綠色/Knäbäck 亮綠色，44 × 55 × 76，座寬 38、座深 38、座高 47，軟墊座面與靠背，實木漆腳）
 const DINING = { cx: 410.7, w: 75, h: 75, body: 67, leaf: 57, wall: hi('dinN'), chairW: 44, chairD: 55, chairH: 76, seat: 47, tuck: 10, tuckIn: 36 };
-// 餐廳北牆嵌牆配電箱（DWG EA3 方塊 x 348.1～408.1、深 18 = 牆厚；2026-11-12 使用者確認是配電箱，實際尺寸與離地高度待照片／現場量）
-//   處理：木作飾板包板（可拆或掀開，四周各多 pad），與餐桌靠的同一面牆；餐桌高 75、飾板在桌面之上，不影響餐桌靠牆
-const DIST_BOX = { x0: 348.1, x1: 408.1, z0: 140, z1: 180, pad: 5, t: 1.8 };   // z0／z1 暫定（一般住宅分電盤離地約 140～180）
+// 餐廳北牆嵌牆配電箱（DWG EA 符號方塊 x 348.1～408.1、深 18 = 牆厚；2026-11-12 使用者確認並提供照片）
+//   照片換算：水平以 DWG 鋁門框外緣 90 cm（238.1～328.1）為比例尺、沿牆面做透視校正；垂直依鏡頭焦距有約 ±5 cm 不確定
+//   上下兩個同寬的箱子：上「2FA7 PANEL 1Φ3W 220-110V」電力分電箱、下「宅內配線箱」（弱電，門片中段有 8 條通風百葉），平面把手都在門片左側中段
+//   外框寬約 52（比 DWG 符號的 60 窄，取照片值、中心對 DWG 378.1）、離地約 80～210、上下分界約 142
+//   處理：木作飾板包板（可拆或掀開，四周各多 pad），與餐桌靠的同一面牆；餐桌高 75、飾板底 z0 − pad = 75 剛好在桌面高度
+const DIST_BOX = { x0: 352.1, x1: 404.1, z0: 80, split: 142, z1: 210, pad: 5, t: 1.8,
+  upper: '電力分電箱（2FA7 PANEL）', lower: '宅內配線箱（弱電）' };   // z0／split／z1 依照片推估（±5），現場可再量
 {
   const D = DIST_BOX, face = hi('dinN'), g = new THREE.Group();
-  const door = new THREE.MeshStandardMaterial({ color: 0x9a9da0, roughness: 0.4, metalness: 0.5 });
+  const frame = new THREE.MeshStandardMaterial({ color: 0xf1eee6, roughness: 0.5, metalness: 0.2 });   // 白色外框
+  const door = new THREE.MeshStandardMaterial({ color: 0xe6dfc9, roughness: 0.5, metalness: 0.2 });    // 米白烤漆門片
+  const slot = new THREE.MeshStandardMaterial({ color: 0xb5ae9e, roughness: 0.8 });                      // 通風百葉的縫
+  const plate = new THREE.MeshStandardMaterial({ color: 0xfafafa, roughness: 0.4 });                     // 標示牌
   const oak = new THREE.MeshStandardMaterial({ color: 0xc9a67a, roughness: 0.6 });
-  box(D.x0, D.x1, face - 1, face + 0.3, D.z0, D.z1, door, door, g);                                                        // 配電箱門板（嵌在牆內，略凸出牆面）
-  box(D.x0 - D.pad, D.x1 + D.pad, face + 0.3, face + 0.3 + D.t, D.z0 - D.pad, D.z1 + D.pad, oak, oak, g);                   // 木作飾板（包板）
-  box(D.x1 + D.pad - 3, D.x1 + D.pad - 1, face + 0.3 + D.t, face + 0.3 + D.t + 1.2, (D.z0 + D.z1) / 2 - 4, (D.z0 + D.z1) / 2 + 4, mat.steel, mat.steel, g);   // 小把手
+  const doorX0 = D.x0 + 1.5, doorX1 = D.x1 - 1.5, doorMid = (doorX0 + doorX1) / 2, handleH = 13, coverY = face + 1.5;
+  box(D.x0, D.x1, face - 1, face + 0.6, D.z0, D.z1, frame, frame, g);                                                      // 外框（嵌在牆內，凸出牆面 0.6）
+  for (const [z0, z1, lower] of [[D.split + 0.8, D.z1 - 1.5, false], [D.z0 + 1.5, D.split - 0.8, true]]) {               // 上：電力分電箱；下：宅內配線箱
+    const zm = (z0 + z1) / 2;
+    box(doorX0, doorX1, face + 0.6, face + 1.0, z0, z1, door, door, g);                                                    // 門片（凸出外框 0.4）
+    box(doorX0 + 1.5, doorX0 + 4, face + 1.0, face + 1.3, zm - handleH / 2, zm + handleH / 2, mat.steel, mat.steel, g);    // 平面把手（門片左側中段）
+    box(doorMid - 8, doorMid + 8, face + 1.0, face + 1.1, z1 - 5.5, z1 - 2.5, plate, plate, g);                            // 標示牌（2FA7 PANEL／宅內配線箱）
+    if (lower) for (let i = 0; i < 8; i++) {                                                                               // 宅內配線箱門片中段的 8 條通風百葉（間距 4）
+      const zs = zm + 14 - i * 4;
+      box(doorMid - 5, doorMid + 5, face + 0.9, face + 1.05, zs - 0.6, zs + 0.6, slot, slot, g);
+    }
+  }
+  box(D.x0 - D.pad, D.x1 + D.pad, coverY, coverY + D.t, D.z0 - D.pad, D.z1 + D.pad, oak, oak, g);                          // 木作飾板（包板，離門片 0.5 蓋過把手）
+  box(D.x1 + D.pad - 3, D.x1 + D.pad - 1, coverY + D.t, coverY + D.t + 1.2, (D.z0 + D.z1) / 2 - 4, (D.z0 + D.z1) / 2 + 4, mat.steel, mat.steel, g);   // 飾板小把手
   const el = document.createElement('div');
   el.className = 'lbl';
-  el.innerHTML = `配電箱包板<small>配電箱約 ${Math.round(D.x1 - D.x0)} × ${D.z1 - D.z0}（高度暫定，待照片）· 木作飾板可拆</small>`;
+  el.innerHTML = `配電箱包板<small>上 ${D.upper} 高 ${D.z1 - D.split}、下 ${D.lower} 高 ${D.split - D.z0}；外框約 ${Math.round(D.x1 - D.x0)} × ${D.z1 - D.z0}、離地 ${D.z0}～${D.z1}（照片換算）· 木作飾板可拆</small>`;
   const o = new CSS2DObject(el);
   { const [px, pz] = P((D.x0 + D.x1) / 2, face + 2); o.position.set(px, M(D.z1 + D.pad + 8), pz); }
   g.add(o);
@@ -2710,7 +2730,7 @@ const DOORS = [
   { name: '臥室一門', wall: 'V', fixed: WL.b1W.c,   hinge: OP.b1Door[0],   dir: 1,  w: OP.b1Door[1] - OP.b1Door[0],     swing: 1,  t: WL.b1W.t,   head: 210, glassPart: true, wood: true },   // 實牆時木皮門片，玻璃隔間時改成玻璃門片
   { name: '主臥門',   wall: 'H', fixed: WL.mDoor.c, hinge: OP.mDoor[0],    dir: 1,  w: OP.mDoor[1] - OP.mDoor[0],       swing: 1,  t: WL.mDoor.t, head: 210, wood: true },
   // 後陽台鋁門（實品屋：單扇鋁框玻璃門）：鉸鏈在西側，往後陽台開，開到底門片靠在客浴東牆朝陽台的那一面（PDF 開門弧線相同）
-  { name: '後陽台門', wall: 'H', fixed: WL.dinN.c,  hinge: OP.dinDoor[0],  dir: 1,  w: OP.dinDoor[1] - OP.dinDoor[0],   swing: -1, t: WL.dinN.t,  head: 240, sill: 8, alu: true },
+  { name: '後陽台門', wall: 'H', fixed: WL.dinN.c,  hinge: OP.dinDoor[0],  dir: 1,  w: OP.dinDoor[1] - OP.dinDoor[0],   swing: -1, t: WL.dinN.t,  head: DIN_DOOR.head, sill: DIN_DOOR.sill, alu: true },
 ];
 const DOOR_NEAR = 2.0;        // 走到門中心多近（m）開始開門：一步 0.65 m，提前打開才不會被還在轉動的門片擋住
 const DOOR_SPEED = 2.6;       // 開關速度（rad/s）：90° 約 0.6 秒
@@ -3618,7 +3638,7 @@ function quoteMeasure() {
   for (const b of BEAMS) if (b.x1 > C.x0 && b.x0 < C.x1 && b.y1 > cback && b.y0 < cf) cabLen -= Math.min(C.x1, b.x1) - Math.max(C.x0, b.x0);
   const r1 = v => Math.round(v * 10) / 10;
   return {
-    v: 2,                    // 2：lights.kind、pendant、bed1Devices.redo
+    v: 3,                    // 3：distBox.split（配電箱上下箱分界）；2：lights.kind、pendant、bed1Devices.redo
     wallH: WALL_H,
     indoorArea: Math.round(ROOMS.filter(r => !r.out).reduce((s, r) => s + r.area, 0) * 100) / 100,   // m²
     lights: { indoor: LIGHTS.filter(L => !L.out).map(L => ({ kind: lightType(L), type: LIGHT_NAME[lightType(L)], room: L.room, sw: L.sw })) },   // kind＝穩定代碼，type＝顯示名稱（臥室一平釘時 h 為崁燈）
@@ -3642,7 +3662,7 @@ function quoteMeasure() {
     pipes: { z: PIPE_Z, r: PIPE_R },
     mbBox: { on: mbBox === 'box', len: Math.round((lo('mE') - hi('mbW')) * 10) / 10, w: Math.round((MB_BOX.y1 - hi('kS')) * 10) / 10, drop: WALL_H - MB_BOX.z0,
       alcoveArea: Math.round((lo('b1W') - hi('kE')) * (hi('kS') - hi('mDoor')) / 100) / 100 },   // 門內走道平釘天花 m²
-    distBox: { w: Math.round(DIST_BOX.x1 - DIST_BOX.x0), h: DIST_BOX.z1 - DIST_BOX.z0, z0: DIST_BOX.z0, z1: DIST_BOX.z1, pad: DIST_BOX.pad },   // 餐廳配電箱包板（高度暫定）
+    distBox: { w: Math.round(DIST_BOX.x1 - DIST_BOX.x0), h: DIST_BOX.z1 - DIST_BOX.z0, z0: DIST_BOX.z0, split: DIST_BOX.split, z1: DIST_BOX.z1, pad: DIST_BOX.pad },   // 餐廳配電箱包板（上下兩箱，分界 split；照片換算）
     robe: { type: WARDROBE.type, len: Math.round(WARDROBE.len * 10) / 10, d: ROBE_DEPTH, h: WARDROBE.h, sections: WARDROBE.sections.length,
       shelves: WARDROBE.sections.reduce((s, x) => s + x.shelves.length, 0), rails: WARDROBE.sections.reduce((s, x) => s + x.rails.length, 0),
       panels: WARDROBE.doorCols },
@@ -3667,13 +3687,13 @@ const CHECKS = [
   { id: 'ceil', text: `室內淨高 ${WALL_H} cm（2026-11 現場實測客廳）`, note: '全室天花板、吊櫃、衣櫃高度都以此為準；其他房間若不同再告訴我' },
   { id: 'ceil-kitchen', text: `廚房降板天花 ${CEIL.kitchen} cm`, note: '常見值；包排油煙管，影響廚房崁燈與吊櫃' },
   { id: 'ceil-bath', text: `浴室降板天花 客浴 ${CEIL.gbath}、主浴 ${CEIL.mbath} cm`, note: '常見值；包暖風機與排風管' },
-  { id: 'beam', text: `樑底離地 ${BEAM_BOTTOM} cm（樑深暫定 ${WALL_H - BEAM_BOTTOM}）`, note: '影響電視牆吊櫃、洞洞板上緣；要看結構圖或現場量' },
+  { id: 'beam', text: `樑底離地 ${BEAM_BOTTOM} cm（樑深暫定 ${WALL_H - BEAM_BOTTOM}）`, note: '影響電視牆吊櫃、洞洞板上緣；配電箱照片換算餐廳西側縱樑的樑底約 240～260，比暫定值低；要看結構圖或現場量' },
   { id: 'beam-east', text: `東側大樑（DWG 樑線 x 793.1～858.1、寬 65）：客廳內凸出 ${Math.round(lo('livE') - 793.1)} cm、臥室一內整支 65 cm，距臥室一東牆面 ${Math.round(lo('b1E') - 858.1)} cm`, note: '樑深暫定；影響吊櫃東端與臥室一平釘天花收邊，現場確認樑是否凸出與樑底高度' },
   { id: 'slab', text: `樓板厚 ${SLAB_T} cm`, note: '只影響牆頂外觀' },
   { id: 'canopy', text: `陽台弧形天花板厚 ${CANOPY.t + CANOPY.drop} cm（底面離地 ${WALL_H - CANOPY.drop}）`, note: '暫定值；客廳 VAF 的排風管藏在裡面、外面只看到出風格柵，底面若高於風管底（約 315）風管會露出' },
   { id: 'door-h', text: '室內門、大門高度 210 cm', note: '門片與門檻高度' },
   { id: 'win', text: '主臥、臥室一東窗：窗台 60、窗頂 220 cm；客浴窗 110～210 cm', note: '依實品屋照片推估' },
-  { id: 'slide', text: '落地窗頂：客廳 255、餐廳往後陽台的鋁門 240 cm', note: '依實品屋照片推估' },
+  { id: 'slide', text: `落地窗頂：客廳 255；餐廳往後陽台的鋁門框頂 ${DIN_DOOR.head}、門檻 ${DIN_DOOR.sill} cm`, note: '客廳依實品屋照片推估；鋁門依配電箱照片換算框高約 200～220、取常見規格 90 × 210（原估 240 偏高）' },
   { id: 'entry-recess', text: `大門南側內凹約 ${Math.round(lo('entS') - OP.mainDoor[1])} cm（DWG 門口南緣到南牆面；現場量不到 30）、玄關櫃前段深 ${ENTRY_CAB.fd} cm`, note: `放不下一般鞋櫃（需 35～40），前段預設改穿鞋椅（座面離地 ${ENTRY_BENCH.seatH}）；門片轉動時會不會碰到前段，現場量內凹深度與門框位置` },
   { id: 'entry-beam', text: `玄關南側樑（DWG 樑線 y ${BEAMS.find(b => b.name === '玄關南側樑').y0}）凸出玄關櫃靠的南牆面 ${Math.round(lo('entS') - BEAMS.find(b => b.name === '玄關南側樑').y0)} cm、底離地 ${BEAM_BOTTOM}`, note: '玄關櫃上段（前段薄上櫃、後段上櫃）靠牆的上緣會碰到樑：背面留樑的缺口或上段退 5 cm，現場確認樑是否真的凸出與樑底高度' },
   { id: 'robe', text: `主臥訂做衣櫃：寬 ${Math.round(WARDROBE.len)}（主浴門框外緣 y ${OP.mbDoor[1] + 5} 到南牆面，與浴室門框對齊）× 深 ${ROBE_DEPTH}（含門片）× 高 ${WARDROBE.h}（到頂）；內分 ${WARDROBE.sections.length} 格、每格內寬約 ${Math.round(WARDROBE.secW)}`, note: '深 60 為假設值；系統櫃或木作、摺門片數、到頂做法請設計師與廠商確認（原 IKEA ELVARLI 兩欄 80 需約 175 放不下，2026-11-12 改訂做）' },
@@ -3689,7 +3709,7 @@ const CHECKS = [
   { id: 'milsbo', text: 'MILSBO 實際寬度：官網 73 cm、3D 模型 81.5 cm', note: '影響電視櫃左側到牆的距離' },
   { id: 'sofa', text: `STOCKHOLM 沙發深度：官網 88 cm、3D 模型約 94 cm；西端凸出臥室一牆角約 ${Math.round(lo('b1W') - SOFA.x0)} cm`, note: '影響咖啡桌走道與走道入口寬度' },
   { id: 'dwg', text: '平面定義已依客戶單元圖 DWG（公分、1:1）重建：牆、門窗、柱、風管直接取圖面值', note: '燈具、插座、樑、陽台等原本從 PDF 量的項目以 x×0.952、y×0.951 校正後保留，與現場仍可能有 1～3 cm 差異；原 PDF 換算整體偏大約 5%，已修正' },
-  { id: 'distbox', text: `餐廳北牆配電箱（DWG x ${DIST_BOX.x0}～${DIST_BOX.x1}、寬 ${Math.round(DIST_BOX.x1 - DIST_BOX.x0)}；離地高度暫定 ${DIST_BOX.z0}～${DIST_BOX.z1}）以木作飾板包板，在靠牆餐桌（x 373～448）正後方、桌面之上`, note: '實際尺寸與高度待照片／現場量；飾板可拆或掀開，留維修與操作空間；餐桌靠牆時飾板在桌面之上，不必移桌' },
+  { id: 'distbox', text: `餐廳北牆配電箱：上 ${DIST_BOX.upper}、下 ${DIST_BOX.lower} 同寬疊放，外框約 ${Math.round(DIST_BOX.x1 - DIST_BOX.x0)} × ${DIST_BOX.z1 - DIST_BOX.z0}（x ${DIST_BOX.x0}～${DIST_BOX.x1}）、離地 ${DIST_BOX.z0}～${DIST_BOX.z1}、上下分界 ${DIST_BOX.split}；木作飾板包板四周各加 ${DIST_BOX.pad}，在靠牆餐桌（x 373～448）正後方、飾板底 ${DIST_BOX.z0 - DIST_BOX.pad} 與桌面 ${DINING.h} 同高`, note: '尺寸由 2026-11-12 照片換算（水平以 DWG 鋁門框 90 cm 為比例尺並做透視校正；垂直依鏡頭焦距約 ±5 cm），DWG 符號方塊寬 60；包板前請現場量外框與離地高；飾板可拆或掀開，留維修與操作空間' },
   { id: 'dwg-extra', text: 'DWG 另有：客浴排氣管沿後陽台天花（y≈110）到冷氣區魚眼罩；玄關南牆北面的開關 a／c（x 48）、淨流控制器（x 86）在玄關櫃前段的座面與上櫃之間露出，插座（x 168）在後段櫃後方', note: '模型未畫；後段櫃背板要留插座開口，請現場確認各裝置高度' },
   { id: 'docs', text: '向建商或管委會索取水電配置圖、結構圖', note: '確認拆除的牆不是結構牆、樑位與樑深、管線走向' },
 ];

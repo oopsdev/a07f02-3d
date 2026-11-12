@@ -1,7 +1,7 @@
 ---
 title: A07F02 3D 模型架構
 date: 2026-11-12
-version: 2.1.0
+version: 2.1.1
 ---
 
 # 系統架構
@@ -83,8 +83,8 @@ flowchart TD
 | LIGHTS / PENDANT | 客戶單元圖的燈具位置與類型（平頂燈、崁燈、壁燈、景觀燈、出線口）；餐廳吊燈（IKEA VÄXJÖ）的吊點、尺寸、電線長度、吊法（掛鉤繞線或出線延伸）與原出線口 |
 | LIVING_N_OUTLETS / SOUTH_OUTLETS / KITCHEN_WALL_DEVICES / B1_WALL_DEVICES / MB_WALL_DEVICES | 牆上原有的開關插座；依擺法判斷是否移位（原位上色、新位置綠色）或原位重新安裝（上色＋綠框，臥室一北牆整面重做時） |
 | CHECKS | 待確認數值清單（勾選狀態存 localStorage，鍵 CHECKS_KEY） |
-| CARPCAB / ENTRY_CAB / ENTRY_BENCH / PEGBOARD / DIST_BOX | 木作吊櫃、玄關櫃（前段穿鞋椅或原鞋櫃，面板切換）、洞洞板、餐廳北牆配電箱與木作包板 |
-| DOORS / SLIDERS | 平開門片（鉸鏈、開啟方向）與橫拉門片，室內漫遊時自動開關 |
+| CARPCAB / ENTRY_CAB / ENTRY_BENCH / PEGBOARD / DIST_BOX | 木作吊櫃、玄關櫃（前段穿鞋椅或原鞋櫃，面板切換）、洞洞板、餐廳北牆配電箱（上電力分電箱＋下宅內配線箱，尺寸依照片換算）與木作包板 |
+| DOORS / SLIDERS / DIN_DOOR | 平開門片（鉸鏈、開啟方向）與橫拉門片，室內漫遊時自動開關；後陽台鋁門的門檻與框頂高（照片換算） |
 | IKEA_MODELS / placeModel | IKEA 3D 模型（base64 glb）與擺放函式：依牆面對齊、朝向、必要時縮放；讀不到時改畫方塊 |
 | SETTINGS_KEY | localStorage 設定存檔的鍵（逐欄位驗證後套用） |
 | sw.js CACHE / PRECACHE / CDN_HOSTS | service worker 的快取名稱（升版用）、預先快取的同網域檔案、採 cache-first 的 CDN 網域 |
