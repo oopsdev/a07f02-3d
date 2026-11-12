@@ -1251,7 +1251,8 @@ function buildLayout(key) {
         let k = 0;
         for (let yy = a + 3; yy + 26 < b; yy += 27) {                                      // 摺疊衣物
           const m = new THREE.MeshStandardMaterial({ color: cloth[(i * 3 + k++) % cloth.length], roughness: 0.9 });
-          box(wx0 + 8, wx0 + 40, yy, yy + 24, sh + 2.5, sh + 2.5 + 14, m, m, rg);
+          const ct = Math.min(sh + 2.5 + 14, W.h - 2.4);                                     // 衣物頂不穿過頂板（頂板底 W.h - 2.1）
+          if (ct - (sh + 2.5) >= 6) box(wx0 + 8, wx0 + 40, yy, yy + 24, sh + 2.5, ct, m, m, rg);
         }
       }
       sc.rails.forEach((rh, j) => {
@@ -1653,7 +1654,7 @@ function buildTV() {
 //   guest：活動板掀起在牆側、整張桌子往南移 57，長 124，每側 2 張椅子（南端可再加 1 張）；冰箱旁同理，活動板收在冰箱那一側
 // 長邊南北向、偏東放，西側留走道通往後陽台門（252～343）與玄關；廚房開口在南側
 // 餐椅：IKEA PS 2026（亮綠色/Knäbäck 亮綠色，44 × 55 × 76，座寬 38、座深 38、座高 47，軟墊座面與靠背，實木漆腳）
-const DINING = { cx: 410.7, w: 75, h: 75, body: 67, leaf: 57, wall: hi('dinN'), chairW: 44, chairD: 55, chairH: 76, seat: 47, tuck: 10, tuckIn: 36 };
+const DINING = { cx: 410.7, w: 75, h: 75, body: 67, leaf: 57, wall: hi('dinN'), chairW: 44, chairD: 55, chairH: 76, seat: 47, tuck: 10, tuckIn: 36 };
 // 餐廳北牆嵌牆配電箱（DWG EA3 方塊 x 348.1～408.1、深 18 = 牆厚；2026-11-12 使用者確認是配電箱，實際尺寸與離地高度待照片／現場量）
 //   處理：木作飾板包板（可拆或掀開，四周各多 pad），與餐桌靠的同一面牆；餐桌高 75、飾板在桌面之上，不影響餐桌靠牆
 const DIST_BOX = { x0: 348.1, x1: 408.1, z0: 140, z1: 180, pad: 5, t: 1.8 };   // z0／z1 暫定（一般住宅分電盤離地約 140～180）
@@ -2296,7 +2297,7 @@ const GRILLE_H = 100;
 //     中空正下方左右兩個抽屜（鑰匙、口罩、證件），抽屜下方為鞋櫃（左右門），櫃底懸空 25 放常穿的鞋；懸空處與中空開放層都有 LED 間接照明；中空以上為上櫃
 //   後段（往餐廳）x 131.6～厚外牆北端西面（與牆面切齊）：深 45，落地到天花板整面封閉收納（鞋子、外套、吸塵器）
 // 後段東端與厚外牆北端（thickN）的西側面切齊，內縮 0.3 避免共平面閃動
-const ENTRY_CAB = { wall: lo('entS'), fx0: hi('entW') + 3.1, split: 126.6, bx1: lo('thickN') - 0.3, fd: 35, lift: 25, bd: 45, bh: WALL_H, niche: [90, 135], drawerRow: [72, 90], midSplit: 110 };   // 抽屜左右並排一排（72～90），下方 25～72 為鞋櫃
+const ENTRY_CAB = { wall: lo('entS'), fx0: hi('entW') + 3.1, split: 126.6, bx1: lo('thickN') - 0.3, fd: 35, lift: 25, bd: 45, bh: WALL_H, niche: [90, 135], drawerRow: [72, 90], midSplit: 110 };   // 抽屜左右並排一排（72～90），下方 25～72 為鞋櫃
 // 前段方案（2026-11-12）：大門南側內凹只有約 30～35 cm（現場量不到 30），放不下一般鞋櫃（需 35～40），預設改做穿鞋椅＋掛鉤板＋薄上櫃；可切回原鞋櫃方案比較
 //   座面離地 seatH（橡木，厚 seatT）、座下左右兩個抽屜（lift 以上到座面下）、底部懸空 lift 放常穿的鞋（LED 同原方案）
 //   掛鉤板：橡木橫板離地 hookH、hooks 個掛鉤（包包、外套）；薄上櫃：深 upperD、離地 upperZ0 到天花板（換季小物），底部 LED 照座面
@@ -2308,7 +2309,12 @@ const ENTRY_BACK = { hangW: 60, hangTop: 240, hangBottom: 100, shoeLevels: [1.8,
 let entryFrontGroup = null;
 function buildEntryFront() {
   if (entryFrontGroup) {
-    entryFrontGroup.traverse(o => { if (o.isCSS2DObject) o.element.remove(); o.geometry && o.geometry.dispose(); if (o.material && o.material.map) o.material.map.dispose(); });
+    entryFrontGroup.traverse(o => {                                           // 釋放幾何與材質（box() 的材質是陣列，逐一處理）
+      if (o.isCSS2DObject) o.element.remove();
+      if (!o.isMesh) return;
+      o.geometry.dispose();
+      for (const mt of [].concat(o.material)) { if (mt.map) mt.map.dispose(); mt.dispose(); }
+    });
     scene.remove(entryFrontGroup);
   }
   const g = new THREE.Group(), E = ENTRY_CAB, B = ENTRY_BENCH, bench = entryFront === 'bench';
@@ -2374,7 +2380,7 @@ function buildEntryFront() {
     else lightUp(E.niche[1], E.niche[0], E.fd, 0.4);                 // 中空開放層：照在橡木檯面
   }
   const by0 = E.wall - E.bd;
-  // 前段與後段交接的側板（後段比前段深 15 cm）
+  // 前段與後段交接的側板（後段比前段深 10 cm）
   box(E.split - 1.5, E.split - 0.3, by0 + 0.3, fy0 - 0.3, 0.3, E.bh - 0.3, white, white, g);
   const el = document.createElement('div');
   el.className = 'lbl';
@@ -2382,7 +2388,7 @@ function buildEntryFront() {
     ? `玄關櫃<small>前段深 ${E.fd}・穿鞋椅（座高 ${B.seatH}）＋掛鉤板＋薄上櫃 ／ 後段深 ${E.bd}・吊掛區＋層板區（點一下看內裝）</small>`
     : `玄關櫃<small>前段深 ${E.fd}・中空 ${E.niche[0]}～${E.niche[1]}＋左右抽屜＋鞋櫃 ／ 後段深 ${E.bd}・吊掛區＋層板區（點一下看內裝）</small>`;
   // 目前配置：玄關說明
-  document.getElementById('sum-entry').textContent = `玄關櫃（前段${bench ? '穿鞋椅' : '淺 ' + E.fd}／後深 ${E.bd} cm，到天花板）`;
+  document.getElementById('sum-entry').textContent = `玄關櫃（${bench ? '前段穿鞋椅' : '前淺 ' + E.fd}／後深 ${E.bd} cm，到天花板）`;
   document.getElementById('entry-note').innerHTML =
     `<li>沿玄關南牆，總長約 ${Math.round(E.bx1 - E.fx0)} 公分，分前後兩段，都做到天花板（高度：${E.bh} 公分）。大門鉸鏈在北側、往內開，門片寬約 ${Math.round(OP.mainDoor[1] - OP.mainDoor[0])} 公分，開關時外緣會掃到南側內凹的位置（約 ${Math.round(lo('entS') - OP.mainDoor[1])} 公分），所以門片掃過的範圍內前段做淺（與內凹同深），過了這個範圍才變深。</li>` +
     (bench
@@ -3319,7 +3325,13 @@ document.getElementById('reset-settings').addEventListener('click', () => {
   settingsReady = false;
   location.reload();
 });
-loadSettings();
+try { loadSettings(); }
+catch (err) {
+  console.error(MSG_SETTINGS_LOAD_FAIL, err);                       // 存檔內容讓某個設定套用失敗：清掉存檔、改用預設值重來，不讓整頁停擺
+  try { localStorage.removeItem(SETTINGS_KEY); } catch (e) { console.error(MSG_SETTINGS_LOAD_FAIL, e); }
+  settingsReady = false;
+  loadSettings();
+}
 
 // 點地板選空間（拖曳不算）
 const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
@@ -3663,6 +3675,7 @@ const CHECKS = [
   { id: 'win', text: '主臥、臥室一東窗：窗台 60、窗頂 220 cm；客浴窗 110～210 cm', note: '依實品屋照片推估' },
   { id: 'slide', text: '落地窗頂：客廳 255、餐廳往後陽台的鋁門 240 cm', note: '依實品屋照片推估' },
   { id: 'entry-recess', text: `大門南側內凹約 ${Math.round(lo('entS') - OP.mainDoor[1])} cm（DWG 門口南緣到南牆面；現場量不到 30）、玄關櫃前段深 ${ENTRY_CAB.fd} cm`, note: `放不下一般鞋櫃（需 35～40），前段預設改穿鞋椅（座面離地 ${ENTRY_BENCH.seatH}）；門片轉動時會不會碰到前段，現場量內凹深度與門框位置` },
+  { id: 'entry-beam', text: `玄關南側樑（DWG 樑線 y ${BEAMS.find(b => b.name === '玄關南側樑').y0}）凸出玄關櫃靠的南牆面 ${Math.round(lo('entS') - BEAMS.find(b => b.name === '玄關南側樑').y0)} cm、底離地 ${BEAM_BOTTOM}`, note: '玄關櫃上段（前段薄上櫃、後段上櫃）靠牆的上緣會碰到樑：背面留樑的缺口或上段退 5 cm，現場確認樑是否真的凸出與樑底高度' },
   { id: 'robe', text: `主臥訂做衣櫃：寬 ${Math.round(WARDROBE.len)}（主浴門框外緣 y ${OP.mbDoor[1] + 5} 到南牆面，與浴室門框對齊）× 深 ${ROBE_DEPTH}（含門片）× 高 ${WARDROBE.h}（到頂）；內分 ${WARDROBE.sections.length} 格、每格內寬約 ${Math.round(WARDROBE.secW)}`, note: '深 60 為假設值；系統櫃或木作、摺門片數、到頂做法請設計師與廠商確認（原 IKEA ELVARLI 兩欄 80 需約 175 放不下，2026-11-12 改訂做）' },
   { id: 'switch-dbc', text: '廚房北牆開關組 d、b、c 的實際位置', note: '圖面圓點畫在離牆約 30 cm 處' },
   { id: 'vaf', text: `客廳靜流風機 VAF：機身 ${Math.round(VAF.w)} × ${Math.round(VAF.d)}（圖面），高度暫以 ${VAF.h} cm 畫；排風管 ø${VAF.duct.r * 2} 穿東側大樑線與落地窗上方外牆、藏在弧形天花板裡，出風格柵接在風管下方、嵌在天花板底面，外面只看到格柵（外牆外 ${Math.round(VAF.duct.outX - hi('livE'))} cm 起，約 ${Math.round(VAF.hood.w)} × ${Math.round(VAF.hood.d)}，依現場照片）`, note: '圖面風管直接穿過樑線，假設建商有預留套管；格柵位置依圖面出風口矩形，機身高度與風管實際走法請現場確認' },
