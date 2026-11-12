@@ -1677,7 +1677,7 @@ const DIST_BOX = { x0: 352.1, x1: 404.1, z0: 80, split: 142, z1: 210, pad: 5, t:
     const zm = (z0 + z1) / 2;
     box(doorX0, doorX1, face + 0.6, face + 1.0, z0, z1, door, door, g);                                                    // 門片（凸出外框 0.4）
     box(doorX0 + 1.5, doorX0 + 4, face + 1.0, face + 1.3, zm - handleH / 2, zm + handleH / 2, mat.steel, mat.steel, g);    // 平面把手（門片左側中段）
-    box(doorMid - 8, doorMid + 8, face + 1.0, face + 1.1, z1 - 5.5, z1 - 2.5, plate, plate, g);                            // 標示牌（2FA7 PANEL／宅內配線箱）
+    box(doorMid - 8, doorMid + 8, face + 1.0, face + 1.15, z1 - 5.5, z1 - 2.5, plate, plate, g);                           // 標示牌（2FA7 PANEL／宅內配線箱；厚 0.15，0.1 會被 box() 的最小尺寸門檻擋掉）
     if (lower) for (let i = 0; i < 8; i++) {                                                                               // 宅內配線箱門片中段的 8 條通風百葉（間距 4）
       const zs = zm + 14 - i * 4;
       box(doorMid - 5, doorMid + 5, face + 0.9, face + 1.05, zs - 0.6, zs + 0.6, slot, slot, g);
@@ -3709,7 +3709,7 @@ const CHECKS = [
   { id: 'milsbo', text: 'MILSBO 實際寬度：官網 73 cm、3D 模型 81.5 cm', note: '影響電視櫃左側到牆的距離' },
   { id: 'sofa', text: `STOCKHOLM 沙發深度：官網 88 cm、3D 模型約 94 cm；西端凸出臥室一牆角約 ${Math.round(lo('b1W') - SOFA.x0)} cm`, note: '影響咖啡桌走道與走道入口寬度' },
   { id: 'dwg', text: '平面定義已依客戶單元圖 DWG（公分、1:1）重建：牆、門窗、柱、風管直接取圖面值', note: '燈具、插座、樑、陽台等原本從 PDF 量的項目以 x×0.952、y×0.951 校正後保留，與現場仍可能有 1～3 cm 差異；原 PDF 換算整體偏大約 5%，已修正' },
-  { id: 'distbox', text: `餐廳北牆配電箱：上 ${DIST_BOX.upper}、下 ${DIST_BOX.lower} 同寬疊放，外框約 ${Math.round(DIST_BOX.x1 - DIST_BOX.x0)} × ${DIST_BOX.z1 - DIST_BOX.z0}（x ${DIST_BOX.x0}～${DIST_BOX.x1}）、離地 ${DIST_BOX.z0}～${DIST_BOX.z1}、上下分界 ${DIST_BOX.split}；木作飾板包板四周各加 ${DIST_BOX.pad}，在靠牆餐桌（x 373～448）正後方、飾板底 ${DIST_BOX.z0 - DIST_BOX.pad} 與桌面 ${DINING.h} 同高`, note: '尺寸由 2026-11-12 照片換算（水平以 DWG 鋁門框 90 cm 為比例尺並做透視校正；垂直依鏡頭焦距約 ±5 cm），DWG 符號方塊寬 60；包板前請現場量外框與離地高；飾板可拆或掀開，留維修與操作空間' },
+  { id: 'distbox', text: `餐廳北牆配電箱：上 ${DIST_BOX.upper}、下 ${DIST_BOX.lower} 同寬疊放，外框約 ${Math.round(DIST_BOX.x1 - DIST_BOX.x0)} × ${DIST_BOX.z1 - DIST_BOX.z0}（x ${DIST_BOX.x0}～${DIST_BOX.x1}）、離地 ${DIST_BOX.z0}～${DIST_BOX.z1}、上下分界 ${DIST_BOX.split}；木作飾板包板四周各加 ${DIST_BOX.pad}，在靠牆餐桌（x ${Math.round(DINING.cx - DINING.w / 2)}～${Math.round(DINING.cx + DINING.w / 2)}）正後方、飾板底 ${DIST_BOX.z0 - DIST_BOX.pad} 與桌面 ${DINING.h} 同高`, note: '尺寸由 2026-11-12 照片換算（水平以 DWG 鋁門框 90 cm 為比例尺並做透視校正；垂直依鏡頭焦距約 ±5 cm），DWG 符號方塊寬 60；包板前請現場量外框與離地高；飾板可拆或掀開，留維修與操作空間' },
   { id: 'dwg-extra', text: 'DWG 另有：客浴排氣管沿後陽台天花（y≈110）到冷氣區魚眼罩；玄關南牆北面的開關 a／c（x 48）、淨流控制器（x 86）在玄關櫃前段的座面與上櫃之間露出，插座（x 168）在後段櫃後方', note: '模型未畫；後段櫃背板要留插座開口，請現場確認各裝置高度' },
   { id: 'docs', text: '向建商或管委會索取水電配置圖、結構圖', note: '確認拆除的牆不是結構牆、樑位與樑深、管線走向' },
 ];
